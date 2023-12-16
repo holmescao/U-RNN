@@ -75,7 +75,7 @@ def ArgumentParsers(
         "-use_checkpoint", default=True, type=bool, help="sequence number per iteration"
     )
     parser.add_argument(
-        "-seq_num", default=45, type=int, help="sequence number per iteration"
+        "-seq_num", default=30, type=int, help="sequence number per iteration"
     )
     parser.add_argument(
         "-window_size", default=360, type=int, help="window size per sample"
