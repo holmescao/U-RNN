@@ -442,9 +442,9 @@ def train_one_epoch(
 
     # 按batch_size来遍历
     for step, (inputs, label,_) in pbar:
-        # TODO: 只训练一半
-        if step > 1:
-            break
+        # # TODO: 只训练一半
+        # if step > 1:
+        #     break
         # print("rank:%d. %s" % (RANK, event_dir))
         inputs = to_device(inputs, device)
         flood_max = 5 * 1000 # ! 最高不超过5m
