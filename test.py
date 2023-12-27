@@ -97,8 +97,8 @@ def test(args, device, testLoader, cur_epoch, upload=False):
         # 按batch_size来遍历
         for i, (inputs, label,event_dir) in enumerate(batch):
             print("event_dir:",event_dir)
-            # if i > 0:
-            #     break
+            if i > 0:
+                break
             inputs = to_device(inputs, device)
             label = label.to(device, dtype=torch.float32)
 
@@ -265,5 +265,5 @@ if __name__ == "__main__":
     # test
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     test(
-        args, device, testLoader,999998,
+        args, device, testLoader,999999,
     )
