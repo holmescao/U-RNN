@@ -418,8 +418,8 @@ def show_results(pred, label, rainfall, task, test_losses,
         title = "cls:Flood-Unflood"
 
     """获取内涝事件的时空变化图"""
-    if task == "reg":
-        vis_event_dynamic(event_data, title, save_fig_dir)
+    # if task == "reg":
+    #     vis_event_dynamic(event_data, title, save_fig_dir)
     # vis_event_dynamic_gif(event_data, title, save_fig_dir)
 
     # """获取降雨-内涝事件的损失"""

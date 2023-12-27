@@ -163,7 +163,7 @@ class ModelEvaluation:
 
 if __name__ == "__main__":
     exp_dir = "../../exp/"
-    best = "20231205_133846_070349"
+    best = "20231216_235718_449685"
 
     best_exp_dir = os.path.join(exp_dir, best, "save_train_loss")
     key = "h"
@@ -209,7 +209,7 @@ if __name__ == "__main__":
             # all_maxae.append(maxae)
 
         # 分割实测降雨和设计降雨的数据
-        real_design = 19
+        real_design = 7
         # real_design = 29
         real_rainfall_mae = all_mae[:real_design]
         design_rainfall_mae = all_mae[real_design:]
@@ -266,13 +266,10 @@ if __name__ == "__main__":
         print("\n所有降雨指标：")
         mean_mae = np.mean(all_mae)
         std_mae = np.std(all_mae)
-        mean_mse = np.mean(all_mse)
-        std_mse = np.std(all_mse)
         mean_rmse = np.mean(all_rmse)
         std_rmse = np.std(all_rmse)
-        mean_maxae = np.mean(all_maxae)
-        std_maxae = np.std(all_maxae)
+        # mean_maxae = np.mean(all_maxae)
+        # std_maxae = np.std(all_maxae)
         print(f"MAE. mean:{mean_mae} std:{std_mae}")
-        print(f"MSE. mean:{mean_mse} std:{std_mse}")
         print(f"RMSE. mean:{mean_rmse} std:{std_rmse}")
-        print(f"MAXAE. mean:{mean_maxae} std:{std_maxae}")
+        # print(f"MAXAE. mean:{mean_maxae} std:{std_maxae}")

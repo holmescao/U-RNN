@@ -49,21 +49,23 @@ class Dynamic2DFlood(data.Dataset):
         self.locations = sorted(os.listdir(self.flood_root), key=lambda x: int(''.join(filter(str.isdigit, x))))
 
         self.locations_dir = [os.path.join(self.flood_root, loc) for loc in self.locations]
-        # TODO: 需要专门写一个txt来索引降雨事件、location
         self.event_names = sorted(os.listdir(self.locations_dir[0]))
 
-        
-        train_data = []
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        with open(f'{script_dir}/train_set.txt', 'r') as train_file:
-            for line in train_file:
-                train_data.append(line.strip())
-            
-        self.event_names = train_data
+        if "train" in split:
+            train_data = []
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            with open(f'{script_dir}/plan2_train_set.txt', 'r') as train_file:
+                for line in train_file:
+                    train_data.append(line.strip())
+            self.event_names = train_data
 
-        # if "test" in split:
-        #     for t in train_data:
-        #         self.event_names.remove(t)
+        elif "test" in split:
+            test_data = []
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            with open(f'{script_dir}/plan2_test_set.txt', 'r') as train_file:
+                for line in train_file:
+                    test_data.append(line.strip())
+            self.event_names = test_data
         
         print(self.event_names)
 
