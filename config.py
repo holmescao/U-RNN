@@ -8,7 +8,7 @@ import datetime
 # conda activate cnnlstm
 # CUDA_VISIBLE_DEVICES=1 python main.py --device 1 -batch_size 1
 # CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.launch --nproc_per_node=1 --master_port 2122 main.py  --device 1 -batch_size 1
-# CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6 python -m torch.distributed.launch --nproc_per_node=7 --master_port 2135 main.py --device 0,1,2,3,4,5,6 -batch_size 7
+# CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,7 python -m torch.distributed.launch --nproc_per_node=7 --master_port 2135 main.py --device 0,1,2,3,4,5,7 -batch_size 7
 # CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node=2 --master_port 2131 main.py --device 0,1 -batch_size 2
 # CUDA_VISIBLE_DEVICES=1,2,3,4,5,6,7 python -m torch.distributed.launch --nproc_per_node=7 main.py --device 1,2,3,4,5,6,7 -batch_size 7
 
