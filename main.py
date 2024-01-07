@@ -168,7 +168,7 @@ def init_torch_seeds(seed=0):
     # 避免这种差异的方法就是将deterministic设置为True(表明每次卷积的高效算法相同)
     # 速度与可重复性之间的权衡  涉及底层卷积算法优化
     # slower, more reproducible  慢 但是具有可重复性 适用于网络的输入数据在每次iteration都变化的话
-    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
     # torch.backends.cudnn.enabled = False
     # if seed == 42:
