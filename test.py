@@ -257,7 +257,7 @@ if __name__ == "__main__":
     print("="*10)
     # print("Exp: loss_name@%s, reduction@%s" % (loss_name, reduction))
     # 设置参数
-    timestamp = "20231216_235718_449685"
+    timestamp = "20231227_102420_153171"
     args = ArgumentParsers(exp_root='../../exp', timestamp=timestamp)
     # load dataset、model
     args = load_model_params(args)
@@ -265,5 +265,5 @@ if __name__ == "__main__":
     # test
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     test(
-        args, device, testLoader,999999,
+        args, device, testLoader,999998,
     )

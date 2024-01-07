@@ -163,7 +163,7 @@ class ModelEvaluation:
 
 if __name__ == "__main__":
     exp_dir = "../../exp/"
-    best = "20231216_235718_449685"
+    best = "20231227_102420_153171"
 
     best_exp_dir = os.path.join(exp_dir, best, "save_train_loss")
     key = "h"

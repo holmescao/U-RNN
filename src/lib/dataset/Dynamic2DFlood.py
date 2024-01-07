@@ -54,15 +54,14 @@ class Dynamic2DFlood(data.Dataset):
         if "train" in split:
             train_data = []
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            with open(f'{script_dir}/plan2_train_set.txt', 'r') as train_file:
+            with open(f'{script_dir}/p3_train.txt', 'r') as train_file:
                 for line in train_file:
                     train_data.append(line.strip())
             self.event_names = train_data
-
         elif "test" in split:
             test_data = []
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            with open(f'{script_dir}/plan2_test_set.txt', 'r') as train_file:
+            with open(f'{script_dir}/p3_test.txt', 'r') as train_file:
                 for line in train_file:
                     test_data.append(line.strip())
             self.event_names = test_data

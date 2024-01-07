@@ -603,7 +603,7 @@ def load_dataset(args):
         num_workers=nw,
         sampler=train_sampler,
         pin_memory=True,
-        drop_last=True,
+        drop_last=False,
     )
     # # valLoader = torch.utils.data.DataLoader(
     # #     valFolder,
