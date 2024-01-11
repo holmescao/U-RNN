@@ -597,8 +597,8 @@ def load_dataset(args):
 
     trainLoader = torch.utils.data.DataLoader(
         trainvalFolder,
-        # batch_size=1, # debug时用的
-        batch_size=args.batch_size // torch.cuda.device_count(), # 分布式训练必须的
+        batch_size=1, # debug时用的
+        # batch_size=args.batch_size // torch.cuda.device_count(), # 分布式训练必须的
         shuffle=train_sampler is None,
         num_workers=nw,
         sampler=train_sampler,
