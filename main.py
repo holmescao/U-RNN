@@ -238,7 +238,7 @@ def load_model(args, device):
                     state[k] = v.cuda()
 
         cur_epoch = model_info["epoch"] + 1
-
+        
         torch.cuda.empty_cache()
     else:
         checkpoint_path = os.path.join(
@@ -259,7 +259,7 @@ def load_model(args, device):
 
         cur_epoch = 0
     net = net.to(device)
-
+    print(f"cur_epoch:{cur_epoch}")
     # Convert to DDP
     cuda = device.type != "cpu"
     if cuda and RANK != -1:
