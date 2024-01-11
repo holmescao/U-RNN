@@ -106,7 +106,7 @@ def WarmUpCosineAnneal(optimizer, warm_up_iter, T_max, lr_max, lr_min):
     # 设置学习率调整规则 - Warm up + Cosine Anneal
     def lambda0(cur_iter):
         # print("########################cur_iter:", cur_iter)
-        cur_iter = 414
+        cur_iter = 415
         lr = (
             cur_iter / warm_up_iter
             if cur_iter < warm_up_iter
