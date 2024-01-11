@@ -106,7 +106,7 @@ def WarmUpCosineAnneal(optimizer, warm_up_iter, T_max, lr_max, lr_min):
     # 设置学习率调整规则 - Warm up + Cosine Anneal
     def lambda0(cur_iter):
         # print("########################cur_iter:", cur_iter)
-        cur_iter = 415
+        cur_iter = 415 # TODO: 为了恢复而改的
         lr = (
             cur_iter / warm_up_iter
             if cur_iter < warm_up_iter
@@ -123,7 +123,7 @@ def WarmUpCosineAnneal(optimizer, warm_up_iter, T_max, lr_max, lr_min):
             )
             / 0.1
         )
-        print(f"学习率:{lr}")
+        # print(f"学习率:{lr}")
         return lr
 
     # LambdaLR
@@ -598,8 +598,8 @@ def load_dataset(args):
 
     trainLoader = torch.utils.data.DataLoader(
         trainvalFolder,
-        batch_size=1, # debug时用的
-        # batch_size=args.batch_size // torch.cuda.device_count(), # 分布式训练必须的
+        # batch_size=1, # debug时用的
+        batch_size=args.batch_size // torch.cuda.device_count(), # 分布式训练必须的
         shuffle=train_sampler is None,
         num_workers=nw,
         sampler=train_sampler,
