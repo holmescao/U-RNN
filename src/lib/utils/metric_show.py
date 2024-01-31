@@ -241,11 +241,11 @@ def create_animation(
     im3 = axs[2].imshow(pred[0] - label[0], cmap="bwr", vmin=min_error, vmax=max_error)
 
     cbar = fig.colorbar(im2, ax=[axs[0], axs[1]], location="right", shrink=0.7)
-    cbar.set_label("mm")
+    cbar.set_label("m")
     cbar_ax = cbar.ax
 
     cbar_2 = fig.colorbar(im3, ax=[axs[2]], location="right", shrink=0.7)
-    cbar_2.set_label("mm")
+    cbar_2.set_label("m")
     cbar_ax = cbar_2.ax
 
     intc = 5
@@ -262,7 +262,8 @@ def create_animation(
         label_f[label_f == 0] = np.nan
         # 绘制子图1：pred的热力图
         axs[0].imshow(pred_f, cmap=cmap, vmin=vmin, vmax=vmax)
-        axs[0].set_title("Pred_%s" % key)
+        axs[0].set_title("Pred")
+        # axs[0].set_title("Pred_%s" % key)
 
         # 绘制子图2：label的热力图
         axs[1].imshow(label_f, cmap=cmap, vmin=vmin, vmax=vmax)

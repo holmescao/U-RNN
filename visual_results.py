@@ -149,32 +149,17 @@ def vis_max_depth(event_data, title, save_fig_dir):
     pred_max_ind = pred[0, :, 0, ind[-2], ind[-1]]
     label_max_ind = label[0, :, 0, ind[-2], ind[-1]]
 
-    # plt.plot(pred_max_ind, c='r', label="pred")
-    # plt.plot(label_max_ind, c='g', label="label", ls="--")
-    # plt.legend()
-
-    # plt.xlabel("Time step (min)")
-    # plt.ylabel(title)
-    # plt.tight_layout()
-
     # Create a figure and a single subplot
-    fig, ax1 = plt.subplots(figsize=(10, 5))
+    fig, ax1 = plt.subplots(figsize=(6, 5))
 
     # Plot the rainfall timeseries as bars on the first axis
     color = 'tab:blue'
-    # ax1.plot(range(len(cumulative_rainfall)), cumulative_rainfall, color='tab:green', label='Cumulative Rainfall', linestyle='--')
-
-   
-    # ax1.legend(loc='upper left')
-    ax1.plot(range(len(rainfall)) , rainfall,color=color, alpha=0.6, label='Rainfall')
-    ax1.bar(range(len(rainfall)) , rainfall,color=color, alpha=0.6, label='Rainfall')
+    ax1.plot(range(len(rainfall)), rainfall, color=color, alpha=0.6, label='Rainfall')
+    ax1.bar(range(len(rainfall)), rainfall, color=color, alpha=0.6, label='Rainfall')
     ax1.set_xlabel("Time step (min)")
     ax1.set_ylabel('Rainfall (mm/min)', color=color)
     ax1.set_ylim([8, 0])
-    # ax1.set_ylim([rainfall.max()*3, 0])
     ax1.tick_params(axis='y', labelcolor=color)
-    # ax1.set_title('Rainfall and Flood Timeseries at Spatial Location of Max Value')
-    # ax1.legend(loc='upper right')
 
     # Create a second axis for the flood timeseries
     ax2 = ax1.twinx()
@@ -182,14 +167,24 @@ def vis_max_depth(event_data, title, save_fig_dir):
     ax2.plot(pred_max_ind, c='r', label="pred")
     ax2.plot(label_max_ind, c='g', label="label", ls="--")
     
-    # ax2.plot(timeseries_at_max_location, color=color, label='Flood at Max Value Location')
-    # ax2.plot(range(len(runoff)) , runoff,color="red", alpha=0.6, label=f'runoff')
+    plt.legend()
+    # Calculate R²
+    r_squared = r2_score(label_max_ind, pred_max_ind)
+    # Get current legend labels if exists
+    # Add R² value directly on the plot
+    # x and y coordinates can be adjusted as needed
+    ax2.text(0.98, 0.85, f'R² = {r_squared:.2f}', transform=ax2.transAxes, 
+            horizontalalignment='right', verticalalignment='top', 
+            bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.5))
+
+
+    # # Create a new legend with updated labels
+    # ax2.legend(loc='upper right', labels=new_labels)
+    
     ax2.set_ylabel('Flood Depth (m)', color=color)
     ax2.set_ylim([0, label_max_ind.max()*3])
     ax2.tick_params(axis='y', labelcolor=color)
-    # ax2.legend(loc='upper left')
-    plt.legend(loc='upper right')
-    # Show the figure
+    
     fig.tight_layout()
     
     save_fig_path = os.path.join(
@@ -197,6 +192,8 @@ def vis_max_depth(event_data, title, save_fig_dir):
 
     plt.savefig(save_fig_path, dpi=150, bbox_inches="tight")
     plt.close()
+
+
 
 
 def vis_event_dynamic(event_data, label_name, save_fig_dir):

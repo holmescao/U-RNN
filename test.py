@@ -1,3 +1,5 @@
+import torch.distributed as dist
+from src.lib.utils import select_device
 import wandb
 from config import ArgumentParsers
 from visual_results import (
@@ -19,8 +21,22 @@ import os
 # import seaborn as sns
 from src.lib.dataset.Dynamic2DFlood import (Dynamic2DFlood, preprocess_inputs,
                                             MinMaxScaler, r_MinMaxScaler)
-
+from pathlib import Path
+import sys
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+FILE = Path(__file__).resolve()
+ROOT = FILE.parents[0]
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
+ROOT = Path(os.path.relpath(ROOT, Path.cwd()))
+
+LOCAL_RANK = int(os.getenv("LOCAL_RANK", -1))
+RANK = int(os.getenv("RANK", -1))
+WORLD_SIZE = int(os.getenv("WORLD_SIZE", -1))
+print("LOCAL RANK:", LOCAL_RANK)
+print("RANK:", RANK)
+print("WORLD_SIZE:", WORLD_SIZE)
 
 
 def to_device(inputs, device):
@@ -70,6 +86,7 @@ def test(args, device, testLoader, cur_epoch, upload=False):
     model_name = sorted(
         model_names,
         key=lambda x: int(x.replace("checkpoint_", "").split("_")[0]))[-1]
+    model_name = "checkpoint_684_0.000318271.pth.tar" 
     model_path = os.path.join(args.save_model_dir, model_name)
     model_info = torch.load(model_path, map_location=torch.device('cpu'))
     # cur_epoch = model_info["epoch"]
@@ -97,8 +114,8 @@ def test(args, device, testLoader, cur_epoch, upload=False):
         # 按batch_size来遍历
         for i, (inputs, label,event_dir) in enumerate(batch):
             print("event_dir:",event_dir)
-            if i > 0:
-                break
+            # if i > 0:
+            #     break
             inputs = to_device(inputs, device)
             label = label.to(device, dtype=torch.float32)
 
@@ -181,20 +198,25 @@ def test(args, device, testLoader, cur_epoch, upload=False):
             label_cls_h = label_dict["cls"].to("cpu").detach().numpy()
             label_h = label_dict["reg"].to("cpu").detach().numpy()
             # 保存标签和预测结果
-            if not os.path.exists(args.save_loss_dir):
-                os.makedirs(args.save_loss_dir, exist_ok=True)
+            save_epoch_res_data_dir = os.path.join(args.save_res_data_dir,"epoch@"+str(cur_epoch))
+            if not os.path.exists(save_epoch_res_data_dir):
+                os.makedirs(save_epoch_res_data_dir, exist_ok=True)
+            
+            
+            event_name = event_dir[0].split("/")[-1]
             pred_huv_save_path = os.path.join(
-                args.save_loss_dir, "pred_%d_%s.npz" % (i, str(args.cls_thred).replace(".",""))
+                save_epoch_res_data_dir, "pred_%s.npz" % (event_name)
             )
             label_huv_save_path = os.path.join(
-                args.save_loss_dir, "label_%d_%s.npz" % (i, str(args.cls_thred).replace(".",""))
+                save_epoch_res_data_dir, "label_%s.npz" % (event_name)
             )
             np.savez(pred_huv_save_path, pred_h=pred_h,pred_cls_h=pred_cls_h)
             np.savez(label_huv_save_path, label_h=label_h,label_cls_h=label_cls_h)
 
     
             event_name = event_dir[0].split("/")[-1]
-            save_epoch_sample = os.path.join(save_epoch, f"_sample@{i}_{event_name}")
+            save_epoch_sample = os.path.join(save_epoch, event_name)
+            # save_epoch_sample = os.path.join(save_epoch, f"_sample@{i}_{event_name}")
 
             if not os.path.exists(save_epoch_sample):
                 os.makedirs(save_epoch_sample, exist_ok=True)
@@ -219,14 +241,33 @@ def test(args, device, testLoader, cur_epoch, upload=False):
 def load_dataset(args):
     testFolder = Dynamic2DFlood(data_root=args.data_root, split="test")
 
+    
+    test_sampler = (
+        None
+        if LOCAL_RANK == -1
+        else torch.utils.data.distributed.DistributedSampler(testFolder, shuffle=False)
+    )
+
     testLoader = torch.utils.data.DataLoader(
         testFolder,
-        batch_size=1,
+        # batch_size=1,
+        batch_size=args.batch_size // torch.cuda.device_count(), # 分布式训练必须的
         shuffle=False,
-        num_workers=args.num_workers,
-        drop_last=False,
+        num_workers=1,
+        sampler=test_sampler,
         pin_memory=True,
+        drop_last=False,
     )
+
+    # testLoader = torch.utils.data.DataLoader(
+    #     testFolder,
+    #     batch_size=1,
+    #     # batch_size=args.batch_size // torch.cuda.device_count(), # 分布式训练必须的
+    #     shuffle=False,
+    #     num_workers=args.num_workers,
+    #     drop_last=False,
+    #     pin_memory=True,
+    # )
 
     return testLoader
 
@@ -251,19 +292,32 @@ def label_reg2cls(reg_targets):
     """
     return (reg_targets > 0).float()
 
+def init_device(device, batch_size):
+    device = select_device(device, batch_size)
+    if LOCAL_RANK != -1:
+        assert (
+            torch.cuda.device_count() > LOCAL_RANK
+        ), "insufficient CUDA devices for DDP command"
+        print("torch.cuda.device_count():", torch.cuda.device_count())
+        torch.cuda.set_device(LOCAL_RANK)
+        device = torch.device("cuda", LOCAL_RANK)
+        dist.init_process_group(backend="nccl" if dist.is_nccl_available() else "gloo")
+
+    return device
 
 if __name__ == "__main__":
 
     print("="*10)
     # print("Exp: loss_name@%s, reduction@%s" % (loss_name, reduction))
     # 设置参数
-    timestamp = "20231227_102420_153171"
+    timestamp = "20240107_223311_284164"
     args = ArgumentParsers(exp_root='../../exp', timestamp=timestamp)
     # load dataset、model
     args = load_model_params(args)
+    device = init_device(args.device, args.batch_size)
     testLoader = load_dataset(args)
     # test
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     test(
-        args, device, testLoader,999998,
+        args, device, testLoader,999996,
     )

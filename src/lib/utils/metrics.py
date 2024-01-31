@@ -59,30 +59,116 @@ def cal_structural_similarity(label, pred, data_range, axis):
     return ss
 
 
-def cal_max_time_AE(pred, label, axis):
+def cal_max_time_AE(pred, label, axis,threshold=0.15):
+    
     if axis == 0:
+        # 在时间维度上找到每个位置的最大值
+        # pred_max = np.max(pred, axis=0)
+        label_max = np.max(label, axis=0)
+
+        # 判断最大值是否大于阈值
+        valid_mask = (label_max >= threshold)
         pred_offset_idx = np.argmax(pred, axis)
         label_offset_idx = np.argmax(label, axis)
         # 最值点的时间偏移
-        MaxTAE = pred_offset_idx - label_offset_idx
+        MaxTAE = np.abs(pred_offset_idx - label_offset_idx)
+        
+        MaxTAE[~valid_mask] = 0
     else:
         MaxTAE = None
 
     return MaxTAE
 
 
-def cal_max_position_AE(pred, label, axis):
-    if axis is None:
-        pred_max_idx = np.unravel_index(np.argmax(pred), pred.shape)[1:]
-        label_max_idx = np.unravel_index(np.argmax(label), label.shape)[1:]
-        MaxPAE = euclidean_distance(pred_max_idx, label_max_idx)
-    else:
-        MaxPAE = None
-    return MaxPAE
+def cal_max_position_AE(pred, label,axis,threshold=0.15):
+    """
+    计算pred和label在每个时刻的峰值位置的欧式距离。
+    :param pred: 预测矩阵，形状为(T, H, W)
+    :param label: 标签矩阵，形状为(T, H, W)
+    :return: 每个时刻峰值位置的欧式距离列表
+    """
+    distances = []
+    for t in range(label.shape[0]):
+        # 找到每个矩阵在时刻t的峰值位置
+        pred_peak_pos = np.unravel_index(np.argmax(pred[t]), pred[t].shape)
+        label_peak_pos = np.unravel_index(np.argmax(label[t]), label[t].shape)
+        
+        label_max = np.max(label[t])
 
+        if label_max >= threshold:
+            # 找到每个矩阵在时刻t的峰值位置
+            pred_peak_pos = np.unravel_index(np.argmax(pred[t]), pred[t].shape)
+            label_peak_pos = np.unravel_index(np.argmax(label[t]), label[t].shape)
+
+            # 计算欧式距离
+            distance = np.linalg.norm(np.array(pred_peak_pos) - np.array(label_peak_pos))
+        else:
+            distance = 0
+        distances.append(distance)
+
+    distances = np.array(distances)
+    
+    if not isinstance(axis,tuple):
+        distances = None
+        
+    return distances
 
 def cal_max_value_AE(pred, label, axis):
-    return np.max(pred, axis) - np.max(label, axis)
+    return np.abs(np.max(pred, axis) - np.max(label, axis))
+
+
+def calculate_duration_error(pred, label, axis,threshold=0.15, min_duration=30, time_interval=1):
+    """
+    计算预测和实际数据中大于指定阈值的持续时间误差，并计算平均误差。
+    :param pred: 预测矩阵，形状为(T, H, W)
+    :param label: 实际矩阵，形状为(T, H, W)
+    :param threshold: 内涝判定阈值（默认0.15米）
+    :param min_duration: 最小持续时间（分钟）（默认30分钟）
+    :param time_interval: 时间间隔（分钟）（默认1分钟）
+    :return: 所有位置的平均持续时间误差
+    """
+    def calculate_duration(matrix):
+        """
+        计算大于阈值的持续时间
+        :param matrix: 输入矩阵，形状为(T, H, W)
+        :return: 每个空间位置的持续时间，形状为(H, W)
+        """
+        # 生成大于阈值的布尔矩阵
+        greater_than_threshold = (matrix >= 0.15).astype(int)
+
+        # 计算累积和
+        cumsum = np.cumsum(greater_than_threshold, axis=0)
+
+        # 重置累积和的值
+        reset_points = np.roll(greater_than_threshold, shift=1, axis=0)
+        reset_points[0, :, :] = 0  # 确保第一个时间点不被重置
+        cumsum_reset = np.cumsum(greater_than_threshold * (greater_than_threshold - reset_points < 0), axis=0)
+
+        # 计算持续时间
+        duration = cumsum - cumsum_reset
+
+        # 获取最后一个时间点的持续时间作为每个空间位置的持续时长
+        duration_at_last_time_point = duration[-1, :, :]
+
+        return duration_at_last_time_point
+
+    if axis==0:
+        pred_duration = calculate_duration(pred)
+        label_duration = calculate_duration(label)
+
+        # 计算持续时间差
+        duration_error = np.abs(pred_duration - label_duration) * time_interval
+
+        # 计算平均误差
+        # 沿着时间维度判断是否存在大于阈值的数值
+        flood_locations = np.any(label >= threshold, axis=0)
+        average_error = duration_error
+        # average_error = duration_error[flood_locations]
+        # average_error = np.mean(duration_error)
+    else:
+        average_error = None
+        
+    return average_error
 
 
 def cal_max_AE(pred, label, axis):
@@ -142,5 +228,7 @@ def calculate_error(pred, label, axis=(0, 1, 2)):
 
     # # 误差的最大值
     # errors["MaxAE"] = cal_max_AE(pred, label, axis)
+    
+    errors["FDAE"] = calculate_duration_error(pred, label, axis)
 
     return errors
