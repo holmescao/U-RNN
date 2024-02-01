@@ -86,7 +86,7 @@ def test(args, device, testLoader, cur_epoch, upload=False):
     model_name = sorted(
         model_names,
         key=lambda x: int(x.replace("checkpoint_", "").split("_")[0]))[-1]
-    model_name = "checkpoint_684_0.000318271.pth.tar" 
+    # model_name = "checkpoint_684_0.000318271.pth.tar" 
     model_path = os.path.join(args.save_model_dir, model_name)
     model_info = torch.load(model_path, map_location=torch.device('cpu'))
     # cur_epoch = model_info["epoch"]
