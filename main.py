@@ -742,8 +742,8 @@ if __name__ == "__main__":
 
     if RANK in {-1, 0}:
         now = datetime.datetime.now()
-        timestamp = now.strftime("%Y%m%d_%H%M%S_%f")
-        # timestamp = "20240107_223311_284164"
+        # timestamp = now.strftime("%Y%m%d_%H%M%S_%f")
+        timestamp = "20240131_154653_360175"
         with open(timestamp_save_path, "w") as f:
             f.write(timestamp)
 
