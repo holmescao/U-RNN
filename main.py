@@ -106,7 +106,7 @@ def WarmUpCosineAnneal(optimizer, warm_up_iter, T_max, lr_max, lr_min):
     # 设置学习率调整规则 - Warm up + Cosine Anneal
     def lambda0(cur_iter):
         # print("########################cur_iter:", cur_iter)
-        cur_iter = cur_iter+47 # TODO: 为了恢复而改的
+        # cur_iter = cur_iter+47 # TODO: 为了恢复而改的
         lr = (
             cur_iter / warm_up_iter
             if cur_iter < warm_up_iter
@@ -598,8 +598,8 @@ def load_dataset(args):
 
     trainLoader = torch.utils.data.DataLoader(
         trainvalFolder,
-        batch_size=1, # debug时用的
-        # batch_size=args.batch_size // torch.cuda.device_count(), # 分布式训练必须的
+        # batch_size=1, # debug时用的
+        batch_size=args.batch_size // torch.cuda.device_count(), # 分布式训练必须的
         shuffle=train_sampler is None,
         num_workers=nw,
         sampler=train_sampler,
@@ -616,8 +616,8 @@ def load_dataset(args):
     # # )
     testLoader = torch.utils.data.DataLoader(
         testFolder,
-        batch_size=1,
-        # batch_size=args.batch_size // torch.cuda.device_count(), # 分布式训练必须的
+        # batch_size=1,
+        batch_size=args.batch_size // torch.cuda.device_count(), # 分布式训练必须的
         shuffle=False,
         num_workers=nw,
         sampler=test_sampler,
@@ -742,8 +742,8 @@ if __name__ == "__main__":
 
     if RANK in {-1, 0}:
         now = datetime.datetime.now()
-        # timestamp = now.strftime("%Y%m%d_%H%M%S_%f")
-        timestamp = "20240131_154653_360175"
+        timestamp = now.strftime("%Y%m%d_%H%M%S_%f")
+        # timestamp = "20240131_154653_360175"
         with open(timestamp_save_path, "w") as f:
             f.write(timestamp)
 

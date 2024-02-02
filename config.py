@@ -164,7 +164,7 @@ def ArgumentParsers(
     )
     parser.add_argument(
         "-model_params", default="See wandb", help="model params")
-    parser.add_argument("-upload", default=False, help="upload to wandb")
+    parser.add_argument("-upload", default=True, help="upload to wandb")
     parser.add_argument("-wind_random", default=True,
                         help="random window segment")
     parser.add_argument("-test", default=True, help="test after train")

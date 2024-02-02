@@ -17,7 +17,7 @@ decoder_filter_size = 1
 convgru_encoder_params = [
     [
         # v1
-        OrderedDict({"conv1_leaky_1": [30+30, 16, encoder_filter_size, 1, 0],
+        OrderedDict({"conv1_leaky_1": [30+30+3, 16, encoder_filter_size, 1, 0],
                      }),
         OrderedDict({"conv2_leaky_1": [64, 64, encoder_filter_size, 1, 0],
                      "avgpool": [2, 2, 0]}),

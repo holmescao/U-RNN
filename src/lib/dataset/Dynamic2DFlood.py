@@ -322,11 +322,11 @@ def preprocess_inputs(t, inputs, output_t_info, device,nums=30):
     # 拼接所有变量
     processd_inputs = torch.cat(
         [
+            norm_rainfall,
+            norm_cumsum_rainfall,
             norm_absolute_DEM,
             norm_impervious,
             norm_manhole,
-            norm_rainfall,
-            norm_cumsum_rainfall,
             # norm_flood,
             # norm_runoff,
         ],
