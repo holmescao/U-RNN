@@ -277,7 +277,6 @@ class Dynamic2DFlood(data.Dataset):
         return self.num_samples
 
 
-
 def preprocess_inputs(t, inputs, output_t_info, device,nums=30):
     """
     归一化
@@ -299,9 +298,9 @@ def preprocess_inputs(t, inputs, output_t_info, device,nums=30):
     norm_manhole = MinMaxScaler(manhole, 1, 0)
     
     
-    # 积水深度
-    norm_flood = output_t_info["output_t"]  # 预测的就是归一化后的
-    flood = r_MinMaxScaler(norm_flood, 5000, 0)
+    # # 积水深度
+    # norm_flood = output_t_info["output_t"]  # 预测的就是归一化后的
+    # flood = r_MinMaxScaler(norm_flood, 5000, 0)
     
     # 提取降雨
     H, W = absolute_DEM.shape[-2:]
@@ -323,9 +322,9 @@ def preprocess_inputs(t, inputs, output_t_info, device,nums=30):
     # 拼接所有变量
     processd_inputs = torch.cat(
         [
-            # norm_absolute_DEM,
-            # norm_impervious,
-            # norm_manhole,
+            norm_absolute_DEM,
+            norm_impervious,
+            norm_manhole,
             norm_rainfall,
             norm_cumsum_rainfall,
             # norm_flood,
