@@ -157,7 +157,6 @@ class Decoder(nn.Module):
         hidden_states = []
         # 3 -> 2 -> 1
         # 先解码最后一层
-
         
         inputs, state = self.forward_by_stage(
             3, None,
