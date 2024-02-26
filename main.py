@@ -337,7 +337,7 @@ def model_forward(
         "loss_reg_label": [],
         "loss_reg_pred": [],
         "loss_cls": [],
-        "loss_ssim": [],
+        # "loss_ssim": [],
     }
 
     # nums = len(iter_indexes)//3  # 每次随机学习三分之一的特征 
@@ -424,7 +424,7 @@ def model_forward(
                     ),
                     "reg_pred": "{:.9f}".format(np.average(iter_loss["loss_reg_pred"])),
                     "cls": "{:.9f}".format(np.average(iter_loss["loss_cls"])),
-                    "ssim": "{:.9f}".format(np.average(iter_loss["loss_ssim"])),
+                    # "ssim": "{:.9f}".format(np.average(iter_loss["loss_ssim"])),
                     "epoch": "{:02d}".format(epoch),
                 }
             )
@@ -489,7 +489,7 @@ def print_epoch_train_info(epoch, upload_info, epoch_start_time, epoch_end_time)
         + f"reg_label: {upload_info['loss_reg_label']:.9f} | "
         + f"reg_pred: {upload_info['loss_reg_pred']:.9f} | "
         + f"cls: {upload_info['loss_cls']:.9f} | "
-        + f"ssim: {upload_info['loss_ssim']:.9f} | "
+        # + f"ssim: {upload_info['loss_ssim']:.9f} | "
         + "time:%.2f sec" % (epoch_end_time - epoch_start_time)
     )
 
