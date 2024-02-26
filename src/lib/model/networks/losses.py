@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def select_loss_function(loss_name, reduction):
@@ -23,38 +22,6 @@ def select_loss_function(loss_name, reduction):
         loss_function = FocalBCE_and_W2MSE(reduction=reduction)
 
     return loss_function
-
-
-class SSIMLoss(torch.nn.Module):
-    def __init__(self, window_size=11, size_average=True):
-        super(SSIMLoss, self).__init__()
-        self.window_size = window_size
-        self.size_average = size_average
-        self.channel = 1
-        self.window = self.create_window(window_size).cuda()
-
-    def gaussian(self, window_size, sigma):
-        gauss = torch.Tensor([exp(-(x - window_size//2)**2/float(2*sigma**2)) for x in range(window_size)]).cuda()
-        return gauss/gauss.sum()
-
-    def create_window(self, window_size, channel=1):
-        _1D_window = self.gaussian(window_size, 1.5).unsqueeze(1)
-        _2D_window = _1D_window.mm(_1D_window.t()).float().unsqueeze(0).unsqueeze(0)
-        window = _2D_window.expand(channel, 1, window_size, window_size).contiguous()
-        return window
-
-    def forward(self, img1, img2):
-        (_, channel, _, _) = img1.size()
-        window = self.create_window(self.window_size, channel)
-        mu1 = F.conv2d(img1, window, padding=self.window_size//2, groups=channel)
-        mu2 = F.conv2d(img2, window, padding=self.window_size//2, groups=channel)
-        mu1_sq, mu2_sq, mu1_mu2 = mu1.pow(2), mu2.pow(2), mu1*mu2
-        sigma1_sq = F.conv2d(img1*img1, window, padding=self.window_size//2, groups=channel) - mu1_sq
-        sigma2_sq = F.conv2d(img2*img2, window, padding=self.window_size//2, groups=channel) - mu2_sq
-        sigma12 = F.conv2d(img1*img2, window, padding=self.window_size//2, groups=channel) - mu1_mu2
-        C1, C2 = 0.01**2, 0.03**2
-        ssim_map = ((2*mu1_mu2 + C1)*(2*sigma12 + C2))/((mu1_sq + mu2_sq + C1)*(sigma1_sq + sigma2_sq + C2))
-        return 1 - ssim_map.mean()
 
 
 class W2MSELoss(nn.Module):
@@ -105,18 +72,21 @@ class WMSELoss(nn.Module):
         # self.mae_loss = nn.L1Loss()
 
     def forward(self, inputs, targets):
-        flood_inputs, flood_targets, unflood_inputs, unflood_targets \
-            = self.cal_mask(inputs, targets)
+        flood_inputs, flood_targets, unflood_inputs, unflood_targets = self.cal_mask(inputs, targets)
 
-        flood_loss = F.mse_loss(flood_inputs,
-                                flood_targets,
-                                reduction=self.reduction)
-        unflood_loss = F.mse_loss(unflood_inputs,
-                                  unflood_targets,
-                                  reduction=self.reduction)
+        # 检查flood_inputs和flood_targets是否为空，如果为空，设置flood_loss为0或默认值
+        if flood_inputs.numel() > 0 and flood_targets.numel() > 0:
+            flood_loss = F.mse_loss(flood_inputs, flood_targets, reduction=self.reduction)
+        else:
+            flood_loss = torch.tensor(0.0, device=inputs.device, requires_grad=True)
 
-        # loss = flood_loss +  0.8 *unflood_loss
-        loss = self.factor * flood_loss +  unflood_loss
+        # 检查unflood_inputs和unflood_targets是否为空，如果为空，设置unflood_loss为0或默认值
+        if unflood_inputs.numel() > 0 and unflood_targets.numel() > 0:
+            unflood_loss = F.mse_loss(unflood_inputs, unflood_targets, reduction=self.reduction)
+        else:
+            unflood_loss = torch.tensor(0.0, device=inputs.device, requires_grad=True)
+
+        loss = self.factor * flood_loss + unflood_loss
 
         return loss, flood_loss, unflood_loss
 
@@ -272,8 +242,6 @@ class FocalBCE_and_WMSE(nn.Module):
         self.cls_loss = FocalBCELoss(gamma=gamma,
                                      alpha=alpha,
                                      reduction=reduction)
-        
-        self.ssim_loss = SSIMLoss()
 
         self.reg_weight = reg_weight
         self.reduction = reduction
@@ -281,9 +249,12 @@ class FocalBCE_and_WMSE(nn.Module):
         self.ssim_weight = 0.001
         
     def forward(self, inputs, targets, epoch):
-        cls_targets = self.label_reg2cls(targets)
-        loss_cls = self.cls_loss(inputs["cls"], cls_targets) # 预测的，是置信度
-        
+        # cls
+        # cls_targets = self.label_reg2cls(targets)
+        # loss_cls = self.cls_loss(inputs["cls"], cls_targets) # 预测的，是置信度
+        device = inputs["cls"].device
+        loss_cls = torch.zeros(1, dtype=torch.float32, requires_grad=True).to(device)
+
         # loss_ssim = self.ssim_loss(inputs["cls"][:,:,0], cls_targets[:,:,0])
         
         loss_reg, loss_reg_flood, loss_reg_unflood = self.reg_losses(
@@ -309,9 +280,6 @@ class FocalBCE_and_WMSE(nn.Module):
             "loss_reg_label": loss_reg_flood,
             "loss_reg_pred": loss_reg_unflood,
             "loss_cls": loss_cls,
-            "loss_ssim": torch.zeros(1).cuda(),
-            # "loss_cls": torch.zeros(1).cuda(),
-            # "loss_ssim": loss_ssim,
         }
 
     def label_reg2cls(self, reg_targets):
