@@ -1,4 +1,4 @@
-# High-resolution spatiotemporal nowcasting of urban flood with U-RNN
+# High-resolution spatiotemporal nowcasting of urban flooding with U-RNN
 
 ## 0 Nowcasting performance
 
