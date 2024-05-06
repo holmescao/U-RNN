@@ -1,2 +1,4 @@
 wandb/*
 .vscode/*
+data/*
+exp/*

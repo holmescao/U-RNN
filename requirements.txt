@@ -12,3 +12,5 @@ apex
 celluloid
 opencv-python==4.6.0.66
 openpyxl==3.0.10
+cuda-python==12.3.0
+pycuda==2024.1

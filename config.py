@@ -2,169 +2,129 @@ import argparse
 import os
 
 
-# CUDA_VISIBLE_DEVICES=1 python main.py --device 1 -batch_size 1
-# CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.launch --nproc_per_node=1 --master_port 2122 main.py  --device 1 -batch_size 1
-# CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python -m torch.distributed.launch --nproc_per_node=8 --master_port 2135 main.py --device 0,1,2,3,4,5,6,7 -batch_size 8
-# CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.launch --nproc_per_node=1 --master_port 2131 main.py --device 0 -batch_size 1
-# CUDA_VISIBLE_DEVICES=1,2,3,4,5,6,7 python -m torch.distributed.launch --nproc_per_node=7 main.py --device 1,2,3,4,5,6,7 -batch_size 7
-# CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.launch --nproc_per_node=1 main.py --device 0 -batch_size 1
-
-
 def ArgumentParsers(
-    exp_root="../../exp",
+    exp_root="./exp",
     timestamp="timestamp",
 ):
-    description = """
-    输入: 
-    - 将输入区域为500x500的网格; 16个样本，train:test=12:4
-    - 所有变量都用最大最小归一化；DEM_max=最值, 降雨_max=峰值，内涝_max=峰值3500mm，不透水性_max=0.95，排水口_max=1
-    - 去除机理:flow_volumn
-    - loc=0; window_size改为事件长度; seq_num=45, 顺序窗口
-    - 将完整的一场降雨-内涝事件送进去训练（包括降雨期间和降雨结束的退水过程）
-
-    输出: 当前时刻的洪水
-    模型: GRU, 卷积核1x1；stride=2改为1，用平均池化来做下采样;(16_64_96); 
-        cls和reg走branch+4层;
-        Conv的head:cls不加GN,reg不加GN;ED不加GN;
-        用cls修正reg
-    损失函数: 新的FocalBCE_and_WMSE@0.8; 不上限1e+5; reg*2*4.5; 
-    head激活函数：acts = ["silu"] * 3 + ["sigmoid", "lrelu"];
-    模型优化方案: 
-    - lr=1e-2(multi), patience=10, factor=0.9, min_lr=1e-4; epoch=100; schedule: WarmUpCosineAnneal；if True:
-    - 用checkpoint技术; 去除AMP技术(pytorch版本，不做梯度scale)
-    其他: 每个epoch都保存；DDP技术
     """
+    Creates and configures an argument parser for command-line options, setting default values for experiment 
+    directory and timestamp.
 
+    Parameters:
+    - exp_root: Default path where the experiments are stored.
+    - timestamp: Default timestamp value used for naming files or directories within the experiment.
+
+    Returns:
+    - argparse.Namespace: Parsed command-line arguments with default values included if not overridden by user input.
+    """
+    description = "demo."
+    parser = argparse.ArgumentParser(description)
+
+    # Setup experiment configurations and paths
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--local-rank",
-        type=int,
-        default=-1,
-        help="在一个node上进程的相对序号，local_rank在node之间相互独立",
-    )
-    parser.add_argument(
-        "-exp_name", default="ConvLSTM-model optimize", type=str, help="experiment name"
-    )
-    parser.add_argument(
-        "-description", default=description, type=str, help="description of expr"
-    )
-    parser.add_argument(
-        "-exp_root", default=exp_root, type=str, help="experiment root directory"
-    )
-    parser.add_argument(
-        "-exp_dir",
-        default=os.path.join(exp_root, timestamp),
-        type=str,
-        help="experiment root directory",
-    )
-    parser.add_argument(
-        "-data_root",
-        default="../../data/urbanflood22",
-        type=str,
-        help="data root directory",
-    )
-    parser.add_argument(
-        "--clstm",
-        help="use convlstm as base cell",
-        default=False,
-    )
-    parser.add_argument(
-        "-use_checkpoint", default=True, type=bool, help="sequence number per iteration"
-    )
-    parser.add_argument(
-        "-seq_num", default=28, type=int, help="sequence number per iteration"
-    )
-    parser.add_argument(
-        "-window_size", default=360, type=int, help="window size per sample"
-    )
-    parser.add_argument(
-        "-train_event", default=True, type=bool, help="train full event or rain process"
-    )
-    parser.add_argument(
-        "-all_seq_train", default=False, type=bool, help="all seq per forward"
-    )
-    parser.add_argument(
-        "-full_window_size",
-        default=False,
-        type=bool,
-        help="whether seq_num == window size per backward",
-    )
-    parser.add_argument("-blocks", default=3, type=int,
-                        help="stage number of network")
-    parser.add_argument("-batch_size", default=1, type=int, help="total batch")
-    parser.add_argument("-random_seed", default=42,
-                        type=int, help="random seed")
-    parser.add_argument("-num_workers", default=20,
-                        type=int, help="number of workers")
-    parser.add_argument("--device", default="0", type=str, help="gpu list")
-    parser.add_argument("-lr", default=1e-2, type=float, help="learning rate")
-    parser.add_argument(
-        "-schedule_name",
-        default="WarmUpCosineAnneal",
-        type=str,
-        help="schedule_name: ReduceLROnPlateau | WarmUpCosineAnneal",
-    )
-    parser.add_argument("-warm_up_iter", default=10,
-                        type=float, help="warm_up_iter")
-    parser.add_argument(
-        "-patience", default=10, type=float, help="patience of learning rate decrease"
-    )
-    parser.add_argument(
-        "-factor", default=0.9, type=float, help="decrease rate of learning rate"
-    )
-    parser.add_argument("-epochs", default=1000, type=int, help="sum of epochs")
-    parser.add_argument(
-        "-loss_name",
-        default="FocalBCE_and_WMSE",
-        type=str,
-        help="loss function: FocalBCE_and_W2MSE | FocalBCE_and_WMSE | FocalBCE_and_Flood_MSE | WMSE | MSE | Focal_MSE | Focal_MSE_BCE",
-    )
-    parser.add_argument(
-        "-reduction", default="mean", type=str, help="loss function: mean|sum"
-    )
-    parser.add_argument(
-        "-save_loss_dir",
-        type=str,
-        default="%s/%s/save_train_loss" % (exp_root, timestamp),
-        help="save directory of final loss",
-    )
-    parser.add_argument(
-        "-save_res_data_dir",
-        type=str,
-        default="%s/%s/save_res_data" % (exp_root, timestamp),
-        help="save directory of final loss",
-    )
-    parser.add_argument(
-        "-save_model_dir",
-        type=str,
-        default="%s/%s/save_model" % (exp_root, timestamp),
-        help="save directory of model",
-    )
-    parser.add_argument(
-        "-save_dir_flood_maps",
-        type=str,
-        default="%s/%s/flood_maps" % (exp_root, timestamp),
-        help="save directory of pred vs. label flood maps",
-    )
-    parser.add_argument(
-        "-save_fig_dir",
-        type=str,
-        default="%s/%s/figs/" % (exp_root, timestamp),
-        help="save directory of figures",
-    )
-    parser.add_argument(
-        "-flood_thres", type=float, default=0.15 * 1000, help="flood threshold"
-    )
-    parser.add_argument(
-        "-model_params", default="See wandb", help="model params")
-    parser.add_argument("-upload", default=False, help="upload to wandb")
-    parser.add_argument("-wind_random", default=True,
-                        help="random window segment")
-    parser.add_argument("-test", default=True, help="test after train")
-    parser.add_argument("-amp", default=False, help="mix fp16,32 ")
-    parser.add_argument("-timestamp", default=timestamp, help="time stamp")
-    parser.add_argument("-resume", type=bool, default=True, help="time stamp")
-    parser.add_argument("-cls_thred", type=float, default=0.5, help="time stamp")
+    parser.add_argument("--local-rank", type=int, default=-1,
+                        help="Local rank of the process on the node, unique per node.")
+    parser.add_argument("--exp_name", default="ConvLSTM-model optimize",
+                        type=str, help="Name of the experiment for reference and logging.")
+    parser.add_argument("--description", default=description,
+                        type=str, help="Detailed description of the experiment.")
+    parser.add_argument("--exp_root", default=exp_root, type=str,
+                        help="Root directory for all experiment related outputs.")
+    parser.add_argument("--exp_dir", default=os.path.join(exp_root, timestamp),
+                        type=str, help="Specific directory for storing experiment outputs.")
+    parser.add_argument("--data_root", default="./data/urbanflood24",
+                        type=str, help="Root directory where dataset is stored.")
+
+    # Model configuration flags
+    parser.add_argument("--clstm", action="store_true",
+                        help="Flag to use ConvLSTM as the base cell for the model.")
+    parser.add_argument("--use_checkpoint", action="store_true",
+                        help="Enable the use of checkpointing to save model state intermittently.")
+
+    # Training configuration
+    parser.add_argument("--seq_num", default=28, type=int,
+                        help="Window size per iteration during training.")
+    parser.add_argument("--window_size", default=360, type=int,
+                        help="Size of the window for each sample during training.")
+    parser.add_argument("--train_event", action="store_false",
+                        help="Whether to train using full events or only rain processes.")
+    parser.add_argument("--all_seq_train", action="store_true",
+                        help="Flag to use all sequences in one forward pass.")
+    parser.add_argument("--full_window_size", action="store_true",
+                        help="Set sequence number equal to window size per backward pass.")
+    parser.add_argument("--blocks", default=3, type=int,
+                        help="Number of stages in the network model.")
+    parser.add_argument("--batch_size", default=1, type=int,
+                        help="Batch size for training.")
+    parser.add_argument("--random_seed", default=42, type=int,
+                        help="Seed for random number generation to ensure reproducibility.")
+    parser.add_argument("--num_workers", default=20, type=int,
+                        help="Number of worker threads for loading data.")
+
+    # Hardware configuration
+    parser.add_argument("--device", default="0", type=str,
+                        help="GPU device IDs to use.")
+
+    # Learning rate configuration
+    parser.add_argument("--lr", default=1e-2, type=float,
+                        help="Initial learning rate.")
+    parser.add_argument("--schedule_name", default="WarmUpCosineAnneal", type=str,
+                        help="Learning rate scheduler type: ReduceLROnPlateau or WarmUpCosineAnneal.")
+    parser.add_argument("--warm_up_iter", default=10, type=float,
+                        help="Number of iterations for learning rate warm-up phase.")
+    parser.add_argument("--patience", default=10, type=float,
+                        help="Patience for learning rate reduction under ReduceLROnPlateau.")
+    parser.add_argument("--factor", default=0.9, type=float,
+                        help="Factor by which the learning rate will be reduced. New_lr = lr * factor.")
+
+    # Model training and loss configuration
+    parser.add_argument("--epochs", default=1000, type=int,
+                        help="Total number of epochs to train.")
+    parser.add_argument("--loss_name", default="FocalBCE_and_WMSE", type=str,
+                        help="Name of the loss function to use for model training.")
+    parser.add_argument("--reduction", default="mean", type=str,
+                        help="Method to reduce loss: mean or sum.")
+
+    # Directories for saving outputs
+    parser.add_argument("--save_loss_dir", default="%s/%s/save_train_loss" %
+                        (exp_root, timestamp), type=str, help="Directory to save training loss outputs.")
+    parser.add_argument("--save_res_data_dir", default="%s/%s/save_res_data" %
+                        (exp_root, timestamp), type=str, help="Directory to save result data from the model.")
+    parser.add_argument("--save_model_dir", default="%s/%s/save_model" % (exp_root,
+                        timestamp), type=str, help="Directory to save trained model checkpoints.")
+    parser.add_argument("--save_dir_flood_maps", default="%s/%s/flood_maps" % (exp_root,
+                        timestamp), type=str, help="Directory to save flood maps generated during testing.")
+    parser.add_argument("--save_fig_dir", default="%s/%s/figs/" % (exp_root,
+                        timestamp), type=str, help="Directory to save figures and plots.")
+
+    # Other configurations
+    parser.add_argument("--flood_thres", type=float, default=0.15 * 1000,
+                        help="Threshold for defining flooding in the model's predictions.")
+    parser.add_argument("--model_params", default="See wandb",
+                        help="Model parameters as logged and stored in wandb.")
+    parser.add_argument("--upload", action="store_true",
+                        help="Whether to upload results to wandb after training.")
+    parser.add_argument("--wind_random", action="store_false",
+                        help="Whether to select training windows randomly.")
+    parser.add_argument("--test", action="store_false",
+                        help="Whether to perform testing after training.")
+    parser.add_argument("--amp", action="store_true",
+                        help="Enable mixed precision training to accelerate training and reduce memory usage.")
+    parser.add_argument("--timestamp", default=timestamp,
+                        help="Timestamp to uniquely identify this run.")
+    parser.add_argument("--resume", action="store_false",
+                        help="Whether to resume training from the last saved checkpoint.")
+    parser.add_argument("--cls_thred", type=float, default=0.5,
+                        help="Classification threshold for determining positive class predictions.")
+    parser.add_argument("--trt", action="store_true",
+                        help="Whether to use TensorRT for inference optimization.")
+    parser.add_argument("--trt_model_dir", type=str, default="%s/%s/tensorrt/" %
+                        (exp_root, timestamp), help="TensorRT model path.")
+
     args = parser.parse_args()
+    # Print all arguments in a well-formatted manner
+    args_dict = vars(args)  # Convert the Namespace to a dictionary
+    for arg, value in args_dict.items():
+        print(f"{arg}: {value}")
 
     return args

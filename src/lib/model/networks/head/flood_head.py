@@ -1,133 +1,46 @@
-#!/usr/bin/env python3
-# -*- coding:utf-8 -*-
-# Copyright (c) Megvii Inc. All rights reserved.
-
-import math
-# from loguru import logger
-
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
-# from yolox.utils import bboxes_iou, meshgrid
-
-# from .losses import IOUloss
-from .network_blocks import BaseConv, DWConv
-
-from torch.utils.checkpoint import checkpoint, checkpoint_sequential
-
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-
-class SiLU(nn.Module):
-    """export-friendly version of nn.SiLU()"""
-    @staticmethod
-    def forward(x):
-        return x * torch.sigmoid(x)
-
-
-def get_activation(name="silu", inplace=True):
-    if name == "silu":
-        module = nn.SiLU(inplace=inplace)
-    elif name == "relu":
-        module = nn.ReLU(inplace=inplace)
-    elif name == "lrelu":
-        module = nn.LeakyReLU(0.2, inplace=inplace)
-    elif name == "gelu":
-        module = nn.GELU()
-    elif name == "sigmoid":
-        module = nn.Sigmoid()
-    elif name == "":
-        module = None
-    else:
-        raise AttributeError("Unsupported act type: {}".format(name))
-    return module
-
-
-def get_normlization(name, num_features):
-    if name == "bn":
-        module = nn.BatchNorm2d(num_features)
-    elif name == "gn":
-        group = 1 if num_features//32 == 0 else num_features//32
-        module = nn.GroupNorm(group, num_features)
-    elif name == "":
-        module = None
-    else:
-        raise AttributeError("Unsupported normlization type: {}".format(name))
-    return module
-
-
-class finalConv(nn.Module):
-    """A Conv2d -> silu/leaky relu block"""
-
-    def __init__(
-        self,
-        in_channels,
-        out_channels,
-        ksize,
-        stride,
-        groups=1,
-        bias=False,
-        act="leaky",
-        norm="gn",
-    ):
-        super().__init__()
-        # same padding
-        pad = (ksize - 1) // 2
-        self.conv = nn.Conv2d(
-            in_channels,
-            out_channels,
-            kernel_size=ksize,
-            stride=stride,
-            padding=pad,
-            # groups=groups,
-            # bias=bias,
-        )
-
-        # self.bn = nn.BatchNorm2d(out_channels)
-        self.norm = get_normlization(norm, out_channels)
-        self.act = get_activation(act, inplace=True)
-
-    def forward(self, x):
-        if self.act is not None:
-            if self.norm is not None:
-                return self.act(self.norm(self.conv(x)))
-            else:
-                return self.act(self.conv(x))
-        else:
-            if self.norm is not None:
-                return self.norm(self.conv(x))
-            else:
-                return self.conv(x)
-        # if self.act is not None:
-        #     if self.bn is not None:
-        #         return self.act(self.bn(self.conv(x)))
-        #     else:
-        #         return self.act(self.conv(x))
-        # else:
-        #     if self.bn is not None:
-        #         return self.bn(self.conv(x))
-        #     else:
-        #         return self.conv(x)
-
-    # def fuseforward(self, x):
-    #     return self.act(self.conv(x))
+from .network_blocks import BaseConv, DWConv, finalConv
+from torch.utils.checkpoint import checkpoint
 
 
 class ModuleWrapperIgnores2ndArg_cnn(nn.Module):
+    """
+    A module wrapper that ignores an additional dummy argument during the forward pass.
+    This is typically used to maintain compatibility with certain frameworks or for gradient checkpointing.
+    """
+
     def __init__(self, module):
+        """
+        Initializes the ModuleWrapperIgnores2ndArg_cnn with the specified module.
+
+        Parameters:
+        - module: The module to wrap.
+        """
         super().__init__()
-        # self.module = module.to("cuda:2")
         self.module = module
 
     def forward(self, x, dummy_arg=None):
-        # 这里向前传播的时候, 不仅传入x, 还传入一个有梯度的变量, 但是没有参与计算
-        assert dummy_arg is not None
-        x = self.module(x)
-        return x
+        """
+        Forwards the input through the module while ignoring the dummy argument.
+
+        Parameters:
+        - x: The input tensor.
+        - dummy_arg: A dummy argument that must be provided but is not used.
+
+        Returns:
+        - Tensor: The output from the module.
+        """
+        assert dummy_arg is not None, "dummy_arg is required but was None"
+        return self.module(x)
 
 
 class YOLOXHead(nn.Module):
+    """
+    YOLOXHead processes inputs through separate branches for classification (cls) and 
+    regression (reg) tasks, applying convolutions and using checkpoints if required.
+    """
+
     def __init__(
         self,
         cls_thred=0.5,
@@ -137,30 +50,25 @@ class YOLOXHead(nn.Module):
         use_checkpoint=True,
     ):
         """
-        1层stem卷积, in=16, out=256, k=1
-        2层cls和reg卷积, in=256, out=256, k=1
-        1层cls预测卷积, in=256, out=1, k=1
-        1层reg预测卷积, in=256, out=1, k=1
+        Initializes the YOLOXHead with specific configurations for processing features.
 
-
-        Args:
-            act (str): activation type of conv. Defalut value: "silu".
-            depthwise (bool): whether apply depthwise conv in conv branch. Defalut value: False.
+        Parameters:
+        - cls_thred: Threshold value for classification output.
+        - in_channels: Number of input channels.
+        - width: Scaling factor for the number of channels; adjusts channel capacity.
+        - depthwise: Whether to use depthwise convolution.
+        - use_checkpoint: Whether to use gradient checkpointing to save memory during training.
         """
         super().__init__()
 
         Conv = DWConv if depthwise else BaseConv
 
-        # acts = ["silu"] * 3 + [""]*2
-        # acts = ["lrelu"] * 3 + [""]*2
-        # acts = ["silu"] * 3 + ["silu"]*2
-        # acts = ["silu"] * 3 + ["sigmoid", "silu"]
+        # Define activation functions to be used in layers
         acts = ["silu"] * 3 + ["sigmoid", "lrelu"]
-        # acts = ["lrelu"] * 3 + ["sigmoid", "lrelu"]
-        # acts = ["silu"] * 3 + ["sigmoid", "relu"]
+
         self.acts = acts
 
-        # 跟在backbone后的
+        # Stem layer
         self.stems = BaseConv(
             in_channels=int(in_channels * width),
             out_channels=int(in_channels * width),
@@ -211,7 +119,6 @@ class YOLOXHead(nn.Module):
             out_channels=1,
             ksize=1,
             stride=1,
-            # bias=True,
             act=self.acts[3],
             norm="",
         )
@@ -222,7 +129,6 @@ class YOLOXHead(nn.Module):
             out_channels=1,
             ksize=1,
             stride=1,
-            # bias=True,
             act=self.acts[4],
             norm="",
         )
@@ -239,14 +145,24 @@ class YOLOXHead(nn.Module):
 
         self.use_checkpoint = use_checkpoint
 
-        self.cls_thred=cls_thred
+        self.cls_thred = cls_thred
 
     def forward(self, inputs):
-        seq_number, batch_size, input_channel, height, width = inputs.size()
+        """
+        Forward pass through the YOLOX head, applying convolutional and activation layers,
+        with optional checkpointing.
 
-        # 把img展开成seq * bs 张图片
+        Parameters:
+        - inputs: Input tensor to be processed through the head.
+
+        Returns:
+        - Tensor: The processed output tensor containing both classification and regression results.
+        """
+        # Reshape for processing: flatten the sequence and batch dimensions
+        seq_number, batch_size, input_channel, height, width = inputs.size()
         inputs = torch.reshape(inputs, (-1, input_channel, height, width))
 
+        # Apply layers with optional checkpointing
         if self.use_checkpoint:
             inputs = checkpoint(self.stems_wrapper, inputs, self.dummy_tensor)
             # class branch
@@ -259,7 +175,6 @@ class YOLOXHead(nn.Module):
                                   self.dummy_tensor)
             reg_output = checkpoint(self.reg_preds_wrapper, reg_feat,
                                     self.dummy_tensor)
-
         else:
             inputs = self.stems(inputs)
             # class branch
@@ -268,17 +183,17 @@ class YOLOXHead(nn.Module):
             # reg branch
             reg_feat = self.reg_convs(inputs)
             reg_output = self.reg_preds(reg_feat)  # B, 1, h, w
-            
-        if self.acts[-2] == "":  # 需要手动进行simgoid
+
+        # Apply sigmoid if necessary
+        if self.acts[-2] == "":
             cls_output = cls_output.sigmoid()
 
-        # reg correlation
-        reg_output = self.correction_depth(reg_output, cls_output, self.cls_thred)
+        # Apply regression correction based on classification threshold
+        reg_output = self.correction_depth(
+            reg_output, cls_output, self.cls_thred)
 
+        # Concatenate and reshape outputs to original dimensions
         outputs = torch.cat([reg_output, cls_output], 1)  # B, 2, h, w
-        # outputs = reg_output
-
-        # 把img的shape转回来
         outputs = torch.reshape(
             outputs,
             (seq_number, batch_size, outputs.size(1), outputs.size(2),
@@ -288,13 +203,19 @@ class YOLOXHead(nn.Module):
         return outputs
 
     def correction_depth(self, reg_output_t, cls_output_t, flood_thres=0.5):
-        # TODO: 改成attention的方式，即可训练
-        # 法1：把cls转成0-1变量，然后加权到reg
-        correction = (cls_output_t >= flood_thres).float()  # TODO: 可能要去掉
-        # correction = (cls_output_t.sigmoid()>=flood_thres).float()
-        # print(reg_output_t.max())
+        """
+        Applies a threshold-based correction to regression outputs based on classification outputs.
+
+        Parameters:
+        - reg_output: Regression output tensor.
+        - cls_output: Classification output tensor.
+        - flood_thres: Classification threshold to apply.
+
+        Returns:
+        - Tensor: Corrected regression output.
+        """
+        correction = (cls_output_t >= flood_thres).float()
+
         reg_output_t = reg_output_t * correction
-        # print(reg_output_t.max())
-        # TODO: 法2：把cls直接加权到reg
 
         return reg_output_t

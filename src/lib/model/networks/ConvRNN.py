@@ -1,30 +1,25 @@
-#!/usr/bin/env python
-# -*- encoding: utf-8 -*-
-"""
-@File    :   ConvRNN.py
-@Time    :   2020/03/09
-@Author  :   jhhuang96
-@Mail    :   hjh096@126.com
-@Version :   1.0
-@Description:   convrnn cell
-"""
-
 import torch
 import torch.nn as nn
-from torch.utils.checkpoint import checkpoint, checkpoint_sequential
-# from main import DEVICE
-
-# device = DEVICE
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+from torch.utils.checkpoint import checkpoint
 
 
 class ModuleWrapperIgnores2ndArg(nn.Module):
+    """
+    A wrapper for any nn.Module that ignores a second argument in the forward pass.
+    """
+
     def __init__(self, module):
         super().__init__()
         self.module = module
 
     def forward(self, x, dummy_arg=None):
-        # 这里向前传播的时候, 不仅传入x, 还传入一个有梯度的变量, 但是没有参与计算
+        """
+        Forward pass which ignores the dummy argument.
+
+        Parameters:
+        - x: Input tensor.
+        - dummy_arg: A dummy argument which is expected but not used in computation.
+        """
         assert dummy_arg is not None
         x = self.module(x)
         return x
@@ -32,29 +27,38 @@ class ModuleWrapperIgnores2ndArg(nn.Module):
 
 class CGRU_cell(nn.Module):
     """
-    ConvGRU Cell
+    A ConvGRU cell implementation that can be used in an encoder or decoder configuration.
     """
 
     def __init__(self, use_checkpoint, shape, input_channels, filter_size,
                  num_features, module):
+        """
+        Initializes the CGRU cell with specific configurations for the convolutional operations and gating mechanisms.
+
+        Parameters:
+        - use_checkpoint: Boolean indicating whether to use gradient checkpointing to save memory.
+        - shape: Dimensions (height, width) of the input feature maps.
+        - input_channels: Number of channels in the input feature map.
+        - filter_size: Size of the convolution kernel.
+        - num_features: Number of output features for each convolution operation.
+        - module: Specifies the configuration as 'encoder' or 'decoder' to adjust internal connections and channel dimensions.
+        """
         super(CGRU_cell, self).__init__()
         self.shape = shape
         self.input_channels = int(input_channels)
-        # kernel_size of input_to_state equals state_to_state
         self.filter_size = filter_size
         self.num_features = int(num_features)
         self.padding = (filter_size - 1) // 2
-        
-        self.module = module
-        # self.module = "encoder" # TODO: 临时测试
 
-        if self.module == "encoder":  # 只考虑encoder的state
+        self.module = module
+
+        if self.module == "encoder":
             conv_input_channels = self.input_channels + self.num_features
             conv_output_channels = 2 * self.num_features
-        elif self.module == "decoder":  # 同时考虑encoder和decoder的state
+        elif self.module == "decoder":
             conv_input_channels = self.input_channels + 2*self.num_features
             conv_output_channels = 2 * self.num_features
-            
+
         self.conv1 = nn.Sequential(
             nn.Conv2d(
                 conv_input_channels,
@@ -84,8 +88,14 @@ class CGRU_cell(nn.Module):
         self.conv2_module_wrapper = ModuleWrapperIgnores2ndArg(self.conv2)
 
     def forward(self, inputs=None, hidden_state=None, seq_len=1):
-        # TODO: S,B,C,H,W
-        # seq_len=10 for moving_mnist
+        """
+        Forward pass for sequential data processing through ConvGRU cell.
+
+        Parameters:
+        - inputs: Input tensor sequence.
+        - hidden_state: Initial hidden state.
+        - seq_len: Sequence length for processing.
+        """
         if hidden_state is None:
             htprev = torch.zeros(inputs.size(1), self.num_features,
                                  self.shape[0], self.shape[1]).cuda()
@@ -93,14 +103,13 @@ class CGRU_cell(nn.Module):
             htprev = hidden_state
         output_inner = []
 
-        # 开始遍历
         for index in range(seq_len):
             if inputs is None:
                 x = torch.zeros(htprev.size(0), self.input_channels,
                                 self.shape[0], self.shape[1]).cuda()
             else:
                 x = inputs[index, ...]
-            
+
             combined_1 = torch.cat((x, htprev), 1)  # X_t + H_t-1
             if self.use_checkpoint:
                 gates = checkpoint(self.conv1_module_wrapper, combined_1,
@@ -108,8 +117,6 @@ class CGRU_cell(nn.Module):
             else:
                 gates = self.conv1(combined_1)  # W * (X_t + H_t-1)
 
-            # zgate = gates[:, :self.num_features]
-            # rgate = gates[:, self.num_features:]
             zgate, rgate = torch.split(gates, self.num_features, dim=1)
             z = torch.sigmoid(zgate)
             r = torch.sigmoid(rgate)
@@ -131,119 +138,10 @@ class CGRU_cell(nn.Module):
             if self.module == "encoder":
                 htnext = (1 - z) * htprev + z * ht
             elif self.module == "decoder":
-                # ! decoder的state用于遗忘
                 # decoder_htprev = htprev[:, htprev.shape[1]//2:]
                 htnext = (1 - z) * dtprev + z * ht
-                
+
             output_inner.append(htnext)
-            htprev = htnext  # 这句话在这里其实无效，因为seq_len=1
+            htprev = htnext
 
-        return torch.stack(output_inner)
-        # return torch.stack(output_inner), htnext
-
-
-class CLSTM_cell(nn.Module):
-    """ConvLSTMCell"""
-
-    def __init__(self, use_checkpoint, shape, input_channels, filter_size,
-                 num_features):
-        super(CLSTM_cell, self).__init__()
-
-        self.shape = shape  # H, W
-        self.input_channels = input_channels
-        self.filter_size = filter_size
-        self.num_features = num_features
-        # in this way the output has the same size
-        self.padding = (filter_size - 1) // 2
-        self.conv = nn.Sequential(
-            nn.Conv2d(
-                self.input_channels + self.num_features,
-                4 * self.num_features,
-                self.filter_size,
-                1,
-                self.padding,
-            ),
-            nn.GroupNorm(  # 分组归一化，每组32个channels
-                4 * self.num_features // 32, 4 * self.num_features),
-        )
-
-        # self.device = torch.device(
-        #     "cuda" if torch.cuda.is_available() else "cpu")
-
-        self.use_checkpoint = use_checkpoint
-        self.dummy_tensor = torch.ones(1,
-                                       dtype=torch.float32,
-                                       requires_grad=True)
-        self.module_wrapper = ModuleWrapperIgnores2ndArg(self.conv)
-
-    # def forward(self, inputs_state=(None, None), seq_len=1):
-    def forward(self, inputs=None, hidden_state=None, seq_len=1):
-        """Encoding/Decoding Sequence
-
-        将input sequence输入到CNNLSTM结构中，
-        得到hidden_state的输出和最终的cell
-
-        """
-
-        # inputs, hidden_state = inputs_state
-        # 初始化hidden state和cell
-        # if hidden_state is None:
-        if hidden_state[0] is None:
-            hx = torch.zeros(  # (B, num_features, H, W)
-                inputs.size(1), self.num_features, self.shape[0],
-                self.shape[1]).cuda()
-            cx = torch.zeros(inputs.size(1), self.num_features, self.shape[0],
-                             self.shape[1]).cuda()
-        else:
-            hx, cx = hidden_state
-        output_inner = []
-        # 迭代预测
-        index = 0
-        # for index in range(seq_len):
-        if inputs is None:  # decoding的时候x一直是0
-            x = torch.zeros(hx.size(0), self.input_channels, self.shape[0],
-                            self.shape[1]).cuda()
-        else:
-            # 卷积的结果
-            x = inputs[index, ...]  # (B, cnn_out_c, H, W)
-
-        # 将输入x和隐层状态h_{t-1}一起做卷积
-        combined = torch.cat((x, hx), 1)
-
-        if self.use_checkpoint:
-            gates = checkpoint(self.module_wrapper, combined,
-                               self.dummy_tensor)
-        else:
-            gates = self.conv(combined)  # gates: S, num_features*4, H, W
-
-        # 每个gate都有自己的weight，所以直接预测了4份，也就是用的时候要划分4份
-        # it should return 4 tensors: i,f,c,o
-        ingate, forgetgate, cellgate, outgate = torch.split(gates,
-                                                            self.num_features,
-                                                            dim=1)
-        """ 
-        更新LSTM的核心
-        
-        其中，
-        cell和hidden变量中: x表示t-1时刻; y表示t时刻
-        """
-        # TODO：ingate,forgetgate,outgate都没有与C_{t-1}结合
-        # LSTM的核心逻辑
-        ingate = torch.sigmoid(ingate)
-        forgetgate = torch.sigmoid(forgetgate)
-        cy = (forgetgate * cx) + ingate * torch.tanh(cellgate)
-        outgate = torch.sigmoid(outgate)
-        hy = outgate * torch.tanh(cy)
-
-        # 添加hidden state
-        output_inner.append(hy)
-
-        # update hidden state：h_{t-1}, h_{t}; c_{t-1}, c_{t}
-        hx = hy
-        cx = cy
-
-        # 一次预测多个时序时才需要！
-        # return [torch.stack(output_inner), (hy, cy)]
-
-        output_inner.append(cy)
         return torch.stack(output_inner)

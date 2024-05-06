@@ -1,100 +1,154 @@
-#!/usr/bin/env python
-# -*- encoding: utf-8 -*-
-"""
-@File    :   encoder.py
-@Time    :   2020/03/09 18:47:50
-@Author  :   jhhuang96
-@Mail    :   hjh096@126.com
-@Version :   1.0
-@Description:   encoder
-"""
 
 from torch import nn
 from src.lib.model.networks.utils import make_layers
 import torch
-import logging
-from torch.utils.checkpoint import checkpoint, checkpoint_sequential
-
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+from torch.utils.checkpoint import checkpoint
 
 
 class ModuleWrapperIgnores2ndArg_cnn(nn.Module):
+    """
+    A module wrapper for a convolutional neural network (CNN) that ignores an additional dummy argument during the forward pass.
+    This is typically used to enable gradient checkpointing while bypassing PyTorch limitations regarding non-Tensor inputs.
+    """
+
     def __init__(self, module):
+        """
+        Initializes the ModuleWrapperIgnores2ndArg_cnn with the specified module.
+
+        Parameters:
+        - module: The module to wrap, which should be a CNN.
+        """
         super().__init__()
-        # self.module = module.to("cuda:2")
         self.module = module
 
     def forward(self, x, dummy_arg=None):
-        # 这里向前传播的时候, 不仅传入x, 还传入一个有梯度的变量, 但是没有参与计算
-        assert dummy_arg is not None
+        """
+        Forwards the input through the module while ignoring the dummy argument.
+
+        Parameters:
+        - x: The input tensor to the CNN.
+        - dummy_arg: A dummy argument that is not used but required for API compatibility. Must not be None.
+
+        Returns:
+        - Tensor: The output from the CNN module.
+        """
+        assert dummy_arg is not None, "dummy_arg is required but was None"
         x = self.module(x)
         return x
 
 
 class ModuleWrapperIgnores2ndArg_lstm(nn.Module):
+    """
+    A module wrapper for an LSTM that ignores an additional dummy argument during the forward pass.
+    This setup facilitates the use of gradient checkpointing with models that expect multiple inputs.
+    """
+
     def __init__(self, module):
+        """
+        Initializes the ModuleWrapperIgnores2ndArg_lstm with the specified module.
+
+        Parameters:
+        - module: The module to wrap, which should be an LSTM.
+        """
         super().__init__()
         self.module = module
 
-    # def forward(self, x):
-    #     # 这里向前传播的时候, 不仅传入x, 还传入一个有梯度的变量, 但是没有参与计算
-    #     # assert dummy_arg is not None
-    #     x = self.module(x[0])
-    #     return x
     def forward(self, x, hx, cx, dummy_arg=None):
-        # 这里向前传播的时候, 不仅传入x, 还传入一个有梯度的变量, 但是没有参与计算
-        assert dummy_arg is not None
+        """
+        Forwards the inputs through the module while ignoring the dummy argument.
+
+        Parameters:
+        - x: The input tensor to the LSTM.
+        - hx: The hidden state tensor for the LSTM.
+        - cx: The cell state tensor for the LSTM.
+        - dummy_arg: A dummy argument that is not used but required for API compatibility. Must not be None.
+
+        Returns:
+        - Tensor: The output from the LSTM module.
+        """
+        assert dummy_arg is not None, "dummy_arg is required but was None"
         x = self.module(x, (hx, cx))
         return x
 
 
 class ModuleWrapperIgnores2ndArg_gru(nn.Module):
+    """
+    A module wrapper for a GRU that ignores an additional dummy argument during the forward pass.
+    This allows for the use of gradient checkpointing with modules that expect multiple inputs.
+    """
+
     def __init__(self, module):
+        """
+        Initializes the ModuleWrapperIgnores2ndArg_gru with the specified module.
+
+        Parameters:
+        - module: The module to wrap, which should be a GRU or similar recurrent unit.
+        """
         super().__init__()
         self.module = module
 
-    # def forward(self, x):
-    #     # 这里向前传播的时候, 不仅传入x, 还传入一个有梯度的变量, 但是没有参与计算
-    #     # assert dummy_arg is not None
-    #     x = self.module(x[0])
-    #     return x
     def forward(self, x, hx, dummy_arg=None):
-        # 这里向前传播的时候, 不仅传入x, 还传入一个有梯度的变量, 但是没有参与计算
-        assert dummy_arg is not None
+        """
+        Forwards the inputs through the module while ignoring the dummy argument.
+
+        Parameters:
+        - x: The input tensor to the GRU.
+        - hx: The hidden state tensor for the GRU.
+        - dummy_arg: A dummy argument that is not used but required for API compatibility. Must not be None.
+
+        Returns:
+        - Tensor: The output from the GRU module.
+        """
+        assert dummy_arg is not None, "dummy_arg is required but was None"
         x = self.module(x, hx)
         return x
 
 
 class Encoder(nn.Module):
+    """
+    Encoder class for a network that integrates convolutional layers with RNN layers, optionally using LSTM or GRU cells.
+    This encoder processes inputs through multiple stages each consisting of a convolution followed by an RNN layer.
+    """
+
     def __init__(self, clstm, subnets, rnns, use_checkpoint):
-        super().__init__()
-        """__init__ 根据设计的net结构，构建net
-
-        每一层都是：卷积层 + ConvRNN cell
         """
+        Initialize the Encoder with specified layers and configuration.
 
-        assert len(subnets) == len(rnns)
+        Parameters:
+        - clstm (bool): Flag indicating whether to use LSTM (True) or GRU (False).
+        - subnets (list): List of subnet configurations for convolutional layers.
+        - rnns (list): List of RNN layers.
+        - use_checkpoint (bool): Flag to enable gradient checkpointing for saving memory.
+        """
+        super().__init__()
+
+        assert len(subnets) == len(
+            rnns), "Each subnet must correspond to an RNN layer."
+
         self.blocks = len(subnets)
+        self.use_checkpoint = use_checkpoint
+        self.clstm = clstm
 
+        # Convolutional layers
         self.stage1 = make_layers(subnets[0])
         self.stage2 = make_layers(subnets[1])
         self.stage3 = make_layers(subnets[2])
+
+        # RNN layers
         self.rnn1 = rnns[0]
         self.rnn2 = rnns[1]
         self.rnn3 = rnns[2]
 
-        self.use_checkpoint = use_checkpoint
-        self.clstm = clstm  # flag
+        # Dummy tensor for checkpointing
+        self.dummy_tensor = torch.ones(
+            1, dtype=torch.float32, requires_grad=True)
 
-        self.dummy_tensor = torch.ones(1,
-                                       dtype=torch.float32,
-                                       requires_grad=True)
-        # self.dummy_tensor = torch.ones(
-        #     1, dtype=torch.float32, requires_grad=True).to(device)
+        # Wrapping layers to ignore the second argument when checkpointing
         self.stage1_wrapper = ModuleWrapperIgnores2ndArg_cnn(self.stage1)
         self.stage2_wrapper = ModuleWrapperIgnores2ndArg_cnn(self.stage2)
         self.stage3_wrapper = ModuleWrapperIgnores2ndArg_cnn(self.stage3)
-        if self.clstm:
+
+        if clstm:
             self.rnn1_wrapper = ModuleWrapperIgnores2ndArg_lstm(self.rnn1)
             self.rnn2_wrapper = ModuleWrapperIgnores2ndArg_lstm(self.rnn2)
             self.rnn3_wrapper = ModuleWrapperIgnores2ndArg_lstm(self.rnn3)
@@ -104,11 +158,23 @@ class Encoder(nn.Module):
             self.rnn3_wrapper = ModuleWrapperIgnores2ndArg_gru(self.rnn3)
 
     def forward_by_stage(self, i, inputs, hidden_state, subnet, rnn):
+        """
+        Process inputs through one stage of the encoder.
+
+        Parameters:
+        - i (int): Index of the current stage.
+        - inputs (Tensor): Input tensor for the current stage.
+        - hidden_state (Tensor): Hidden state tensor for the RNN.
+        - subnet (nn.Module): Convolutional subnet for the current stage.
+        - rnn (nn.Module): RNN module for the current stage.
+
+        Returns:
+        - outputs_stage (Tensor): Output tensor of the current stage.
+        - state_stage (tuple): State tensor(s) output by the RNN.
+        """
         seq_number, batch_size, input_channel, height, width = inputs.size()
-        """Conv层的操作"""
-        # 把img展开成seq * bs 张图片
         inputs = torch.reshape(inputs, (-1, input_channel, height, width))
-        # 输入网络
+
         if self.use_checkpoint:
             if i == 1:
                 inputs = checkpoint(self.stage1_wrapper, inputs,
@@ -122,14 +188,13 @@ class Encoder(nn.Module):
 
         else:
             inputs = subnet(inputs)
-        """RNN层的操作"""
-        # 把img的shape转回来
+
         inputs = torch.reshape(
             inputs,
             (seq_number, batch_size, inputs.size(1), inputs.size(2),
              inputs.size(3)),
         )
-        # 把inputs放进ConvRNN网络
+
         if self.clstm:
             if self.use_checkpoint:
                 hidden_state = (None,
@@ -153,8 +218,6 @@ class Encoder(nn.Module):
                 outputs_state_stage = rnn(inputs, hidden_state)
         else:
             if self.use_checkpoint:
-                # hidden_state = (
-                #     None, None) if hidden_state == None else hidden_state
                 if i == 1:
                     outputs_state_stage = checkpoint(self.rnn1_wrapper, inputs,
                                                      hidden_state,
@@ -182,18 +245,24 @@ class Encoder(nn.Module):
         return outputs_stage, state_stage
 
     def forward(self, inputs, state_stages):
-        """获取所有变量"""
+        """
+        Forward pass through all stages of the encoder.
+
+        Parameters:
+        - inputs (Tensor): Initial input to the encoder.
+        - state_stages (list): Initial states for each stage of the encoder.
+
+        Returns:
+        - tuple: Tuple containing hidden states from all stages.
+        """
 
         hidden_states = []
-        # 遍历每一个stage
+
         for i in range(1, self.blocks + 1):
-            # stage_{i-1}的hidden state作为stage_{i}的input
             inputs, state_stage = self.forward_by_stage(
                 i, inputs, state_stages[i - 1],
                 getattr(self, "stage" + str(i)), getattr(self, "rnn" + str(i)))
 
-            # 添加每一stage最终的hidden state，用于接下来的decoding
             hidden_states.append(state_stage)
 
         return tuple(hidden_states)
-        # return torch.as_tensor(tuple(hidden_states))  # TODO:改为torch
