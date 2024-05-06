@@ -307,17 +307,13 @@ def init_device(device, batch_size):
 
 if __name__ == "__main__":
 
-    print("="*10)
-    # print("Exp: loss_name@%s, reduction@%s" % (loss_name, reduction))
-    # 设置参数
-    timestamp = "20240107_223311_284164"
+    timestamp = "20240224_180730_484545"
     args = ArgumentParsers(exp_root='../../exp', timestamp=timestamp)
     # load dataset、model
     args = load_model_params(args)
     device = init_device(args.device, args.batch_size)
     testLoader = load_dataset(args)
-    # test
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
     test(
         args, device, testLoader,999996,
     )

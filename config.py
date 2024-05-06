@@ -1,16 +1,13 @@
-import torch
 import argparse
 import os
-import datetime
 
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# conda activate cnnlstm
 # CUDA_VISIBLE_DEVICES=1 python main.py --device 1 -batch_size 1
 # CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.launch --nproc_per_node=1 --master_port 2122 main.py  --device 1 -batch_size 1
 # CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python -m torch.distributed.launch --nproc_per_node=8 --master_port 2135 main.py --device 0,1,2,3,4,5,6,7 -batch_size 8
-# CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node=2 --master_port 2131 main.py --device 0,1 -batch_size 2
+# CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.launch --nproc_per_node=1 --master_port 2131 main.py --device 0 -batch_size 1
 # CUDA_VISIBLE_DEVICES=1,2,3,4,5,6,7 python -m torch.distributed.launch --nproc_per_node=7 main.py --device 1,2,3,4,5,6,7 -batch_size 7
+# CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.launch --nproc_per_node=1 main.py --device 0 -batch_size 1
 
 
 def ArgumentParsers(
@@ -40,7 +37,7 @@ def ArgumentParsers(
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--local_rank",
+        "--local-rank",
         type=int,
         default=-1,
         help="在一个node上进程的相对序号，local_rank在node之间相互独立",
@@ -99,10 +96,6 @@ def ArgumentParsers(
                         type=int, help="random seed")
     parser.add_argument("-num_workers", default=20,
                         type=int, help="number of workers")
-    # parser.add_argument("-gpu_list",
-    #                     default=[0, 3],
-    #                     type=list,
-    #                     help="gpu list")
     parser.add_argument("--device", default="0", type=str, help="gpu list")
     parser.add_argument("-lr", default=1e-2, type=float, help="learning rate")
     parser.add_argument(
@@ -164,7 +157,7 @@ def ArgumentParsers(
     )
     parser.add_argument(
         "-model_params", default="See wandb", help="model params")
-    parser.add_argument("-upload", default=True, help="upload to wandb")
+    parser.add_argument("-upload", default=False, help="upload to wandb")
     parser.add_argument("-wind_random", default=True,
                         help="random window segment")
     parser.add_argument("-test", default=True, help="test after train")

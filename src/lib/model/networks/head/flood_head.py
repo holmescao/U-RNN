@@ -16,6 +16,8 @@ from .network_blocks import BaseConv, DWConv
 
 from torch.utils.checkpoint import checkpoint, checkpoint_sequential
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 class SiLU(nn.Module):
     """export-friendly version of nn.SiLU()"""
@@ -115,7 +117,7 @@ class finalConv(nn.Module):
 class ModuleWrapperIgnores2ndArg_cnn(nn.Module):
     def __init__(self, module):
         super().__init__()
-
+        # self.module = module.to("cuda:2")
         self.module = module
 
     def forward(self, x, dummy_arg=None):
@@ -167,23 +169,23 @@ class YOLOXHead(nn.Module):
             act=acts[0],
         )
 
-        # # class branch
-        # self.cls_convs = nn.Sequential(*[
-        #     Conv(
-        #         in_channels=int(in_channels * width),
-        #         out_channels=int(in_channels * width),
-        #         ksize=1,
-        #         stride=1,
-        #         act=acts[1],
-        #     ),
-        #     Conv(
-        #         in_channels=int(in_channels * width),
-        #         out_channels=int(in_channels * width),
-        #         ksize=1,
-        #         stride=1,
-        #         act=acts[1],
-        #     ),
-        # ])
+        # class branch
+        self.cls_convs = nn.Sequential(*[
+            Conv(
+                in_channels=int(in_channels * width),
+                out_channels=int(in_channels * width),
+                ksize=1,
+                stride=1,
+                act=acts[1],
+            ),
+            Conv(
+                in_channels=int(in_channels * width),
+                out_channels=int(in_channels * width),
+                ksize=1,
+                stride=1,
+                act=acts[1],
+            ),
+        ])
 
         # reg branch
         self.reg_convs = nn.Sequential(*[
@@ -203,16 +205,16 @@ class YOLOXHead(nn.Module):
             ),
         ])
 
-        # # final class pred
-        # self.cls_preds = finalConv(
-        #     in_channels=int(in_channels * width),
-        #     out_channels=1,
-        #     ksize=1,
-        #     stride=1,
-        #     # bias=True,
-        #     act=self.acts[3],
-        #     norm="",
-        # )
+        # final class pred
+        self.cls_preds = finalConv(
+            in_channels=int(in_channels * width),
+            out_channels=1,
+            ksize=1,
+            stride=1,
+            # bias=True,
+            act=self.acts[3],
+            norm="",
+        )
 
         # final reg pred
         self.reg_preds = finalConv(
@@ -226,9 +228,9 @@ class YOLOXHead(nn.Module):
         )
 
         self.stems_wrapper = ModuleWrapperIgnores2ndArg_cnn(self.stems)
-        # self.cls_convs_wrapper = ModuleWrapperIgnores2ndArg_cnn(self.cls_convs)
+        self.cls_convs_wrapper = ModuleWrapperIgnores2ndArg_cnn(self.cls_convs)
         self.reg_convs_wrapper = ModuleWrapperIgnores2ndArg_cnn(self.reg_convs)
-        # self.cls_preds_wrapper = ModuleWrapperIgnores2ndArg_cnn(self.cls_preds)
+        self.cls_preds_wrapper = ModuleWrapperIgnores2ndArg_cnn(self.cls_preds)
         self.reg_preds_wrapper = ModuleWrapperIgnores2ndArg_cnn(self.reg_preds)
 
         self.dummy_tensor = torch.ones(1,
@@ -247,44 +249,33 @@ class YOLOXHead(nn.Module):
 
         if self.use_checkpoint:
             inputs = checkpoint(self.stems_wrapper, inputs, self.dummy_tensor)
-            # # class branch
-            # cls_feat = checkpoint(self.cls_convs_wrapper,
-            #                       inputs, self.dummy_tensor)
-            # cls_output = checkpoint(self.cls_preds_wrapper,
-            #                         cls_feat, self.dummy_tensor)
-
-            # cls_output = checkpoint(self.cls_preds_wrapper,
-            #                         inputs, self.dummy_tensor)
-
+            # class branch
+            cls_feat = checkpoint(self.cls_convs_wrapper,
+                                  inputs, self.dummy_tensor)
+            cls_output = checkpoint(self.cls_preds_wrapper,
+                                    cls_feat, self.dummy_tensor)
             # reg branch
             reg_feat = checkpoint(self.reg_convs_wrapper, inputs,
                                   self.dummy_tensor)
             reg_output = checkpoint(self.reg_preds_wrapper, reg_feat,
                                     self.dummy_tensor)
 
-            # reg_output = checkpoint(self.reg_preds_wrapper, inputs,
-            #                         self.dummy_tensor)
         else:
-            # inputs = self.stems(inputs)
-
+            inputs = self.stems(inputs)
             # class branch
-            # cls_feat = self.cls_convs(inputs)
-            # cls_output = self.cls_preds(cls_feat)  # B, 1, h, w
-
-            # # reg branch
-            # reg_feat = self.reg_convs(inputs)
-            # reg_output = self.reg_preds(reg_feat)  # B, 1, h, w
+            cls_feat = self.cls_convs(inputs)
+            cls_output = self.cls_preds(cls_feat)  # B, 1, h, w
             # reg branch
-            reg_output = self.reg_preds(inputs)  # B, 1, h, w
+            reg_feat = self.reg_convs(inputs)
+            reg_output = self.reg_preds(reg_feat)  # B, 1, h, w
+            
+        if self.acts[-2] == "":  # 需要手动进行simgoid
+            cls_output = cls_output.sigmoid()
 
-        # if self.acts[-2] == "":  # 需要手动进行simgoid
-        #     cls_output = cls_output.sigmoid()
+        # reg correlation
+        reg_output = self.correction_depth(reg_output, cls_output, self.cls_thred)
 
-        # # reg correlation
-        # reg_output = self.correction_depth(reg_output, cls_output, self.cls_thred)
-
-        # outputs = torch.cat([reg_output, cls_output], 1)  # B, 2, h, w
-        outputs = torch.cat([reg_output, reg_output], 1)  # B, 2, h, w
+        outputs = torch.cat([reg_output, cls_output], 1)  # B, 2, h, w
         # outputs = reg_output
 
         # 把img的shape转回来

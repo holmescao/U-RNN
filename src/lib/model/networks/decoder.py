@@ -93,6 +93,8 @@ class Decoder(nn.Module):
         self.rnn2_wrapper = ModuleWrapperIgnores2ndArg_gru(self.rnn2)
         self.rnn3_wrapper = ModuleWrapperIgnores2ndArg_gru(self.rnn3)
 
+        
+        
     def forward_by_stage(self, i, inputs, encoder_states, decoder_states=None):
         # TODO：检查到这里
         """forward_by_stage 解码1个stage
@@ -115,15 +117,24 @@ class Decoder(nn.Module):
         state = torch.cat((encoder_states, decoder_states),
                           dim=1)
         
-        if i == 1:
-            outputs_state_stage = checkpoint(self.rnn1_wrapper,
-                                             state, inputs,  self.dummy_tensor)
-        elif i == 2:
-            outputs_state_stage = checkpoint(self.rnn2_wrapper,
-                                             state, inputs,  self.dummy_tensor)
-        elif i == 3:
-            outputs_state_stage = checkpoint(self.rnn3_wrapper,
-                                             state, inputs,  self.dummy_tensor)
+        if self.use_checkpoint:
+            if i == 1:
+                outputs_state_stage = checkpoint(self.rnn1_wrapper,
+                                                state, inputs,  self.dummy_tensor)
+            elif i == 2:
+                outputs_state_stage = checkpoint(self.rnn2_wrapper,
+                                                state, inputs,  self.dummy_tensor)
+            elif i == 3:
+                outputs_state_stage = checkpoint(self.rnn3_wrapper,
+                                                state, inputs,  self.dummy_tensor)
+        else:
+            if i == 1:
+                outputs_state_stage = self.rnn1(inputs,state)
+            if i == 2:
+                outputs_state_stage = self.rnn2(inputs,state)
+            if i == 3:
+                outputs_state_stage = self.rnn3(inputs,state)
+
         hy = outputs_state_stage[0]
         inputs = hy.unsqueeze(0)
         state_stage = (hy)
@@ -132,15 +143,24 @@ class Decoder(nn.Module):
         seq_number, batch_size, input_channel, height, width = inputs.size()
         inputs = torch.reshape(inputs, (-1, input_channel, height, width))
 
-        if i == 1:
-            inputs = checkpoint(self.stage1_wrapper,
-                                inputs, self.dummy_tensor)
-        elif i == 2:
-            inputs = checkpoint(self.stage2_wrapper,
-                                inputs, self.dummy_tensor)
-        elif i == 3:
-            inputs = checkpoint(self.stage3_wrapper,
-                                inputs, self.dummy_tensor)
+        if self.use_checkpoint:
+            if i == 1:
+                inputs = checkpoint(self.stage1_wrapper,
+                                    inputs, self.dummy_tensor)
+            elif i == 2:
+                inputs = checkpoint(self.stage2_wrapper,
+                                    inputs, self.dummy_tensor)
+            elif i == 3:
+                inputs = checkpoint(self.stage3_wrapper,
+                                    inputs, self.dummy_tensor)
+        else:
+            if i == 1:
+                inputs = self.stage1(inputs)
+            if i == 2:
+                inputs = self.stage2(inputs)
+            if i == 3:
+                inputs = self.stage3(inputs)
+
 
         inputs = torch.reshape(
             inputs,

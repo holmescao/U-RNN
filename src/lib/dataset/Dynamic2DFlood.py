@@ -54,14 +54,14 @@ class Dynamic2DFlood(data.Dataset):
         if "train" in split:
             train_data = []
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            with open(f'{script_dir}/p3_train.txt', 'r') as train_file:
+            with open(f'{script_dir}/train.txt', 'r') as train_file:
                 for line in train_file:
                     train_data.append(line.strip())
             self.event_names = train_data
         elif "test" in split:
             test_data = []
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            with open(f'{script_dir}/p3_test.txt', 'r') as train_file:
+            with open(f'{script_dir}/test.txt', 'r') as train_file:
                 for line in train_file:
                     test_data.append(line.strip())
             self.event_names = test_data
@@ -277,7 +277,7 @@ class Dynamic2DFlood(data.Dataset):
         return self.num_samples
 
 
-def preprocess_inputs(t, inputs, output_t_info, device,nums=30):
+def preprocess_inputs(t, inputs, device,nums=30):
     """
     归一化
     """
@@ -304,7 +304,8 @@ def preprocess_inputs(t, inputs, output_t_info, device,nums=30):
     
     # 提取降雨
     H, W = absolute_DEM.shape[-2:]
-    rainfall = get_past_rainfall(rainfall, t, nums, H, W)
+    rainfall = get_past_rainfall(rainfall, t, 1, H, W)
+    # rainfall = get_past_rainfall(rainfall, t, nums, H, W)
     cumsum_rainfall = get_past_rainfall(cumsum_rainfall, t, nums, H, W)
     
     # 累计降雨每个时间切片都从0开始

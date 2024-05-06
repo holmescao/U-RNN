@@ -145,77 +145,35 @@ class ED(nn.Module):
                                decoder_params[0],
                                decoder_params[1],
                                use_checkpoint=use_checkpoint)
-        self.head = YOLOXHead(cls_thred)
-        # self.head = Reg()
+        self.head = YOLOXHead(cls_thred,use_checkpoint=use_checkpoint)
 
-        # self.risk_conv = nn.Conv2d(in_channels=3,
-        #                            out_channels=1,
-        #                            kernel_size=filter_size,
-        #                            stride=1,
-        #                            padding=(filter_size - 1) // 2)
+    def forward(self, input_t, 
+                prev_encoder_state1,prev_encoder_state2,prev_encoder_state3,
+                  prev_decoder_state1,prev_decoder_state2,prev_decoder_state3
+                  ):
+        prev_encoder_state = [prev_encoder_state1,prev_encoder_state2,prev_encoder_state3]
+        prev_decoder_state= [prev_decoder_state1,prev_decoder_state2,prev_decoder_state3]
 
-        # self.use_checkpoint = use_checkpoint
-        # self.dummy_tensor = torch.ones(1,
-        #                                dtype=torch.float32,
-        #                                requires_grad=True)
-        # self.risk_conv_module_wrapper = ModuleWrapperIgnores2ndArg(
-        #     self.risk_conv)
-
-        
-
-        
-
-    def forward(self, input_t, prev_encoder_state, prev_decoder_state):
         input_t = input_t.permute(1, 0, 2, 3, 4)  # to S,B,C,64,64
-        # check_uniformity(input_t)
-        
-        # # S*B,C,64,64
-        # seq_number, batch_size, input_channel, height, width = input_t.size()
-        # input_t = torch.reshape(input_t, (-1, input_channel, height, width))
-        # # 先处理成风险变量
-        # risk_t = checkpoint(self.risk_conv_module_wrapper, input_t[:, :3],
-        #                     self.dummy_tensor)
-        # input_t = torch.cat([risk_t, input_t[:, 3:4]], dim=1)  # 风险变量+降雨
-        # # S*B,2,64,64
-        # # 把img的shape转回来
-        # input_t = torch.reshape(
-        #     input_t,
-        #     (seq_number, batch_size, input_t.size(1), input_t.size(2),
-        #      input_t.size(3)),
-        # )
-
+ 
         encoder_state_t = self.encoder(input_t, prev_encoder_state)
-        # check_uniformity(encoder_state_t[0]) 
-        # check_uniformity(encoder_state_t[1]) 
-        # check_uniformity(encoder_state_t[2]) 
-        
+
         # (B, S, F, H, W)
         output_t, decoder_state_t = self.decoder(
             encoder_state_t, prev_decoder_state)  # (B, S, F, H, W)
-        # check_uniformity(output_t)
-        # check_uniformity(decoder_state_t[0])
-        # check_uniformity(decoder_state_t[1])
-        # check_uniformity(decoder_state_t[2])
-        
-        
+
         output_t = self.head(output_t)
-        
-        # reg_output_t = self.head(output_t)
-        # check_uniformity(reg_output_t)
-        # reg_output_t = self.reg_conv_module_wrapper(output_t)
 
         reg_output_t, cls_output_t = output_t[:, :, 0:1], output_t[:, :, 1:]
         
-        return reg_output_t, cls_output_t, encoder_state_t, decoder_state_t
-
-    # def correction_depth(self, reg_output_t, cls_output_t, flood_thres=0.5):
-    #     # TODO: 改成attention的方式，即可训练
-    #     # 法1：把cls转成0-1变量，然后加权到reg
-    #     correction = (cls_output_t >= flood_thres).float()  # TODO: 可能要去掉
-    #     # correction = (cls_output_t.sigmoid()>=flood_thres).float()
-    #     # print(reg_output_t.max())
-    #     reg_output_t = reg_output_t * correction
-    #     # print(reg_output_t.max())
-    #     # TODO: 法2：把cls直接加权到reg
-
-    #     return reg_output_t
+        encoder_state_t1 = encoder_state_t[0]
+        encoder_state_t2 = encoder_state_t[1]
+        encoder_state_t3 = encoder_state_t[2]
+        
+        decoder_state_t1 = decoder_state_t[0]
+        decoder_state_t2 = decoder_state_t[1]
+        decoder_state_t3 = decoder_state_t[2]
+        
+        
+        return reg_output_t,  encoder_state_t1, encoder_state_t2,encoder_state_t3, decoder_state_t1,decoder_state_t2,decoder_state_t3
+        # return reg_output_t,  encoder_state_t, decoder_state_t
