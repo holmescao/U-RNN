@@ -38,7 +38,7 @@ Note: other versions will also work, as long as the PyTorch, GPU, CUDA and cuDNN
 
 ## 2 Data preparation
 
-Download [urban flood dataset](？), unzip and put it into the path (`<U-RNN_HOME>/data`).
+Download [urban flood dataset](?) (note: it was uploaded to Figshare.com, and DOI will be available soon), unzip and put it into the path (`<U-RNN_HOME>/data`).
 
 The dataset structure as follow:
 
@@ -54,7 +54,7 @@ data
 	...
         └── geodata
             └── location16
-                ├── absolute_DEM.npy
+                ├── absolute_DSM.npy
                 ├── impervious.npy
                 └── manhole.npy
     ...  
@@ -67,7 +67,7 @@ data
 	...
         └── geodata
             └── location16
-                ├── absolute_DEM.npy
+                ├── absolute_DSM.npy
                 ├── impervious.npy
                 └── manhole.npy
     ...
@@ -75,7 +75,7 @@ data
 
 ## 3 Trained model weights
 
-We provide the trained U-RNN [model weights](?). Please download and put it into the path (`<U-RNN_HOME>/exp/20240202_162801_962166/save_model/`).
+We provide the trained U-RNN [model weights](https://drive.google.com/file/d/1tfwRJ3gFFTa0kiziVeo9xXsz0DaaJrJU/view?usp=drive_link). Please download and put it into the path (`<U-RNN_HOME>/exp/20240202_162801_962166/save_model/checkpoint_939_0.000205376.pth.tar`).
 
 ## 4 (optional) Training 
 
