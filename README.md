@@ -116,18 +116,20 @@ You will get a TensorRT model `URNN.trt` in the path (`<U-RNN_HOME>/exp/<your_ex
 
 - Inference using TensorRT
 
-
-## 7 Citation
-If you find this project useful, please consider to cite our paper. Thank you!
-
-@article{cao4935234u,
-  title={U-Rnn High-Resolution Spatiotemporal Nowcasting of Urban Flooding},
-  author={Cao, Xiaoyan and Wang, Baoying and Yao, Yao and Zhang, Lin and Xing, Yanwen and Mao, Junqi and Zhang, Runqiao and Fu, Guangtao and Borthwick, Alistair GL and Qin, Huapeng},
-  journal={Available at SSRN 4935234}
-}
-
 ```shell
 python test.py --trt
 ```
 
 The results will be saved in the path (`<U-RNN_HOME>/exp/<your_expr_name>/figs/`) .
+
+
+## 7 Citation
+If you find this project useful, please consider to cite our paper. Thank you!
+
+```
+@article{cao4935234u,
+  title={U-Rnn High-Resolution Spatiotemporal Nowcasting of Urban Flooding},
+  author={Cao, Xiaoyan and Wang, Baoying and Yao, Yao and Zhang, Lin and Xing, Yanwen and Mao, Junqi and Zhang, Runqiao and Fu, Guangtao and Borthwick, Alistair GL and Qin, Huapeng},
+  journal={Available at SSRN 4935234}
+}
+```
