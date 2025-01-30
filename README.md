@@ -11,7 +11,7 @@ New Architecture for Spatiotemporal Forecasting!
 >
 > Xiaoyan Cao, et al.
 >
-> *[arXiv:2308.11157](https://arxiv.org/abs/2308.11157)*
+> *[Preprint](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4935234)*
 
 
 ## News ✨
