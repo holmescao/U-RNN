@@ -1,4 +1,4 @@
-# U-RNN High-resolution spatiotemporal nowcasting of urban flooding
+# (Journal of Hydrology 2025) U-RNN High-resolution spatiotemporal nowcasting of urban flooding
 
 New Architecture for Spatiotemporal Forecasting!
 
@@ -15,6 +15,7 @@ New Architecture for Spatiotemporal Forecasting!
 
 
 ## News ✨
+* (2025.03) U-RNN is accepted by Journal of Hydrology! 🎊🎊🎊
 * (2024.12) We have released the proposed [urbanflood24](https://figshare.com/articles/dataset/Supplementary_data_of_U-RNN_high-resolution_spatiotemporal_nowcasting_of_urban_flooding_/28082549?file=51407804) dataset as a new benchmark.
 
 ## Abstract
