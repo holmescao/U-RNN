@@ -61,7 +61,7 @@ Note: other versions will also work, as long as the PyTorch, GPU, CUDA and cuDNN
 
 ## 2 Data preparation
 
-Download [urban flood dataset](https://figshare.com/articles/dataset/Supplementary_data_of_U-RNN_high-resolution_spatiotemporal_nowcasting_of_urban_flooding_/28082549?file=51407804) (note: it was uploaded to Figshare.com, and DOI will be available soon), unzip and put it into the path (`<U-RNN_HOME>/data`).
+Download [urban flood dataset](https://holmescao.github.io/datasets/urbanflood24), unzip and put it into the path (`<U-RNN_HOME>/data`).
 
 The dataset structure as follow:
 
