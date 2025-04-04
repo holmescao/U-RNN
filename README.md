@@ -7,11 +7,11 @@ New Architecture for Spatiotemporal Forecasting!
 
 <p align="center"><img src="figs/pipeline.png" width="900"/></p>
 
-> [**U-RNN High-resolution spatiotemporal nowcasting of urban flooding**](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4935234)
+> [**U-RNN High-resolution spatiotemporal nowcasting of urban flooding**](https://doi.org/10.1016/j.jhydrol.2025.133117)
 >
 > Xiaoyan Cao, et al.
 >
-> *[Preprint](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4935234)*
+> *[Paper](https://doi.org/10.1016/j.jhydrol.2025.133117)*
 
 
 ## News ✨
@@ -149,9 +149,12 @@ The results will be saved in the path (`<U-RNN_HOME>/exp/<your_expr_name>/figs/`
 If you find this project useful, please consider to cite our paper. Thank you!
 
 ```
-@article{cao4935234u,
-  title={U-Rnn High-Resolution Spatiotemporal Nowcasting of Urban Flooding},
+@article{cao2025u,
+  title={U-RNN high-resolution spatiotemporal nowcasting of urban flooding},
   author={Cao, Xiaoyan and Wang, Baoying and Yao, Yao and Zhang, Lin and Xing, Yanwen and Mao, Junqi and Zhang, Runqiao and Fu, Guangtao and Borthwick, Alistair GL and Qin, Huapeng},
-  journal={Available at SSRN 4935234}
+  journal={Journal of Hydrology},
+  pages={133117},
+  year={2025},
+  publisher={Elsevier}
 }
 ```
