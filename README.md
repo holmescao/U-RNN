@@ -15,6 +15,7 @@ New Architecture for Spatiotemporal Forecasting!
 
 
 ## News ✨
+* (2025.04) Our paper is online! Please see [U-RNN](https://www.sciencedirect.com/science/article/pii/S002216942500455X?via%3Dihub) !
 * (2025.03) U-RNN is accepted by Journal of Hydrology! 🎊🎊🎊
 * (2024.12) We have released the proposed [urbanflood24](https://figshare.com/articles/dataset/Supplementary_data_of_U-RNN_high-resolution_spatiotemporal_nowcasting_of_urban_flooding_/28082549?file=51407804) dataset as a new benchmark.
 
