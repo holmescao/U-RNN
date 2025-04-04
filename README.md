@@ -17,7 +17,7 @@ New Architecture for Spatiotemporal Forecasting!
 ## News ✨
 * (2025.04) Our paper is online! Please see [U-RNN](https://www.sciencedirect.com/science/article/pii/S002216942500455X?via%3Dihub) !
 * (2025.03) U-RNN is accepted by Journal of Hydrology! 🎊🎊🎊
-* (2024.12) We have released the proposed [urbanflood24](https://figshare.com/articles/dataset/Supplementary_data_of_U-RNN_high-resolution_spatiotemporal_nowcasting_of_urban_flooding_/28082549?file=51407804) dataset as a new benchmark.
+* (2024.12) We have released the proposed [urbanflood24](https://holmescao.github.io/datasets/urbanflood24) dataset as a new benchmark.
 
 ## Abstract
 
@@ -158,4 +158,12 @@ If you find this project useful, please consider to cite our paper. Thank you!
   year={2025},
   publisher={Elsevier}
 }
+
+  @misc{cao2024supplementary,
+    author       = {Cao, Xiaoyan and Wang, Baoying and Qin, Huapeng},
+    title        = {Supplementary data of “U-RNN high-resolution spatiotemporal nowcasting of urban flooding”},
+    year         = {2024},
+    publisher    = {figshare},
+    note         = {Dataset}
+  }
 ```
