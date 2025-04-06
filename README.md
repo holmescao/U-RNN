@@ -2,7 +2,7 @@
 
 New Architecture for Spatiotemporal Forecasting!
 
-- U-RNN, the first latent autoregressive architecture (verified on 2D hydrodynamics).
+- U-RNN, the first latent autoregressive spatiotemporal architecture (verified on 2D hydrodynamics).
 - SWP training paradigm is used to address large-scale spatiotemporal modeling challenges.
 
 <p align="center"><img src="figs/pipeline.png" width="900"/></p>
