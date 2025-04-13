@@ -17,8 +17,7 @@ New Architecture for Spatiotemporal Forecasting!
 ## News ✨
 * (2025.04) Our paper is online! Please see [U-RNN](https://www.sciencedirect.com/science/article/pii/S002216942500455X?via%3Dihub) !
 * (2025.03) U-RNN is accepted by Journal of Hydrology! 🎊🎊🎊
-* (2024.12) We have released the proposed [urbanflood24](https://holmescao.github.io/datasets/urbanflood24) dataset as a new benchmark.
-
+* (2024.12) The proposed UrbanFlood24 dataset has been released as a new benchmark for urban flood modeling. It is publicly available at our [official project page](https://holmescao.github.io/datasets/urbanflood24) or via [Baidu Cloud (access code: urnn)](https://pan.baidu.com/s/1WCLdgWvT2MsQxpd_hsTGPA).
 ## Abstract
 
 With urban flood risk escalating due to climate change and rapid urbanization, there is a pressing need for fast, accurate, high-resolution spatiotemporal nowcasting flood flow simulations. Although deep learning (DL) methods hold great promise for providing such information, they nevertheless confront two main challenges: how to capture multi-scale nonlinear spatiotemporal interdependencies, and how to optimize long-sequence generalization with limited computational resources. Here we propose a novel U-like Recurrent Neural Network (U-RNN) to represent the spatiotemporal dynamic process of urban flooding, and a Sliding Window-based Pre-warming (SWP) training paradigm to reduce computational demand and enhance the generalization of full sequence predictions.  Case studies of four highly urbanized catchments in China and the United Kingdom, subjected to spatially uniform or variable rainfall events with return periods ranging from 0.1 to 500 years, demonstrate that U-RNN achieves high predictive accuracy in terms of flood extent, peak depth, and hydrograph, and accelerates 6-hour ahead nowcasts with by over 100 times when benchmarked against a state-of-the-art hydrodynamic model. The accuracy of our method also significantly outperforms the state-of-the-art DL method at high spatiotemporal resolution of order O(m) in space and O(min) in time. Results of the ablation study on U-RNN and parameter sensitivity analysis on SWP validate the effectiveness of each module.
@@ -61,7 +60,8 @@ Note: other versions will also work, as long as the PyTorch, GPU, CUDA and cuDNN
 
 ## 2 Data preparation
 
-Download [urban flood dataset](https://holmescao.github.io/datasets/urbanflood24), unzip and put it into the path (`<U-RNN_HOME>/data`).
+
+Download urban flood dataset via [official project page](https://holmescao.github.io/datasets/urbanflood24) or [Baidu Cloud (access code: urnn)](https://pan.baidu.com/s/1WCLdgWvT2MsQxpd_hsTGPA), unzip and put it into the path (`<U-RNN_HOME>/data`).
 
 The dataset structure as follow:
 
