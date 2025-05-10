@@ -102,7 +102,7 @@ The trained U-RNN model weights for `location16` are provided (other locations n
 
 ## 4 (optional) Training 
 
-Note: `considering the limited computational resources, it is recommended to reduce the spatiotemporal resolution of the dataset by sampling from the current 500x500x360 to 200x200x36, which can significantly speed up the training process (with a single 4090 GPU, training can be completed in just one day).`
+Note: `considering the limited computational resources, it is recommended to reduce the spatiotemporal resolution of the dataset by sampling from the current 500x500x360 to 200x200x36, which can significantly speed up the training process (with a single 4090 GPU, training can be completed in just one day).  In addition, reducing the number of epochs is also a direct way to improve training speed. For example, reducing from 1000 to 300 epochs, which can still achieve relatively high accuracy.`
 
 Run the follow command in your terminal:
 
