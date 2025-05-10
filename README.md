@@ -15,6 +15,8 @@ New Architecture for Spatiotemporal Forecasting!
 
 
 ## News ✨
+* (2025.05) In the training section, we provide some suggestions to accelerate the training process, including reducing the spatiotemporal resolution of samples and the number of epochs.
+* (2025.05) Recently, we will be releasing a blog and video introducing the U-RNN (including paper and code reproduction). Stay tuned!
 * (2025.04) Our paper is online! Please see [U-RNN](https://www.sciencedirect.com/science/article/pii/S002216942500455X?via%3Dihub) !
 * (2025.03) U-RNN is accepted by Journal of Hydrology! 🎊🎊🎊
 * (2024.12) The proposed UrbanFlood24 dataset has been released as a new benchmark for urban flood modeling. It is publicly available at our [official project page](https://holmescao.github.io/datasets/urbanflood24) or via [Baidu Cloud (access code: urnn)](https://pan.baidu.com/s/1WCLdgWvT2MsQxpd_hsTGPA).
