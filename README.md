@@ -864,6 +864,11 @@ A: The same `main.py` entry point supports both modes automatically:
 - **Single GPU**: `python main.py --exp_config ...` — no launcher needed.
 - **Multi-GPU (DDP)**: `torchrun --nproc_per_node=N main.py --exp_config ...` — `torchrun` sets `LOCAL_RANK`/`RANK`/`WORLD_SIZE` automatically.
 
+**Important — `batch_size` scaling rule:** `batch_size` in the config is the per-GPU batch size.
+The effective batch size = `batch_size × N` (number of GPUs).
+**Set `batch_size` equal to the number of GPUs you are using** so that the effective batch
+size scales proportionally with GPU count (e.g. 2 GPUs → `batch_size: 2`, 4 GPUs → `batch_size: 4`).
+
 Note: `python -m torch.distributed.launch` (deprecated since PyTorch 1.9) also still works.
 
 ---

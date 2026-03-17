@@ -14,7 +14,7 @@
 #   Multi-GPU (DDP, Linux only — NCCL backend):
 #     CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 main.py \
 #         --exp_config configs/futian_scratch.yaml
-#     # Effective batch size = batch_size × world_size (2 here).
+#     # Set batch_size = N_GPUs (e.g. 2 here); effective batch = batch_size × N_GPUs.
 #     # After training, run inference with the same single-GPU command above.
 #
 # Dataset:  LarNO Futian (region1_20m) — 400×560 grid, 20 m, 5-min, T=72
@@ -57,7 +57,7 @@ viz_time_points: [0, 17, 35, 71]
 
 # ── Training schedule ─────────────────────────────────────────────────────────
 epochs:      200
-batch_size:  1
+batch_size:  1     # per-GPU batch size; for N-GPU DDP set to N (effective = batch_size × N_GPUs)
 random_seed: 42
 num_workers: 4    # set to 0 on Windows if you get DataLoader errors
 

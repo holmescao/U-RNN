@@ -14,7 +14,7 @@
 #   Multi-GPU (DDP, Linux only — NCCL backend):
 #     CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 main.py \
 #         --exp_config configs/ukea_scratch.yaml
-#     # Effective batch size = batch_size × world_size (2 here).
+#     # Set batch_size = N_GPUs (e.g. 2 here); effective batch = batch_size × N_GPUs.
 #     # After training, run inference with the same single-GPU command above.
 #
 # Dataset:  LarNO UKEA (ukea_8m_5min) — 52×120 grid, 8 m, T=36, 5-min steps
@@ -59,7 +59,7 @@ viz_time_points: [0, 8, 17, 35]
 
 # ── Training schedule ─────────────────────────────────────────────────────────
 epochs:      300
-batch_size:  1
+batch_size:  1     # per-GPU batch size; for N-GPU DDP set to N (effective = batch_size × N_GPUs)
 random_seed: 42
 num_workers: 4    # set to 0 on Windows if you get DataLoader errors
 
