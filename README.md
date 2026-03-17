@@ -1,7 +1,7 @@
-# [U-RNN: High-resolution Spatiotemporal Nowcasting of Urban Flooding](https://doi.org/10.1016/j.jhydrol.2025.133117)
+# [U-RNN: High-resolution Spatiotemporal Nowcasting of Urban Flooding](https://www.sciencedirect.com/science/article/pii/S002216942500455X?via%3Dihub)
 
 <p align="center">
-  <a href="https://doi.org/10.1016/j.jhydrol.2025.133117"><img src="https://img.shields.io/badge/Journal%20of%20Hydrology-2025-blue" alt="Journal of Hydrology 2025"></a>
+  <a href="https://www.sciencedirect.com/science/article/pii/S002216942500455X?via%3Dihub"><img src="https://img.shields.io/badge/Journal%20of%20Hydrology-2025-blue" alt="Journal of Hydrology 2025"></a>
   <a href="https://colab.research.google.com/github/holmescao/U-RNN/blob/main/notebooks/quickstart.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
   <a href="https://github.com/holmescao/U-RNN"><img src="https://img.shields.io/github/stars/holmescao/U-RNN?style=social" alt="GitHub Stars"></a>
   <a href="https://holmescao.github.io/datasets/urbanflood24"><img src="https://img.shields.io/badge/Dataset-UrbanFlood24-orange" alt="Dataset"></a>
@@ -153,7 +153,7 @@ U-RNN supports training on three dataset sources:
 
 | Dataset | From | Location | Resolution | Grid | Steps | Duration | Rainfall |
 |---|---|---|---|---|---|---|---|
-| **UrbanFlood24** | [U-RNN paper](https://doi.org/10.1016/j.jhydrol.2025.133117) | China (3 catchments) | 2 m / 1 min | 500×500 | 360 | 6 h | Uniform `(T,)` |
+| **UrbanFlood24** | [U-RNN paper](https://www.sciencedirect.com/science/article/pii/S002216942500455X?via%3Dihub) | China (3 catchments) | 2 m / 1 min | 500×500 | 360 | 6 h | Uniform `(T,)` |
 | **UrbanFlood24 Lite** | U-RNN paper (downsampled) | China (3 catchments) | 8 m / 10 min | 128×128 | 36 | 6 h | Uniform `(T,)` |
 | **Futian** | [LarNO paper](https://holmescao.github.io/datasets/LarNO) | Shenzhen, China | 20 m / 5 min | 400×560 | 72 | 6 h | Spatial `(T,H,W)` |
 | **UKEA** | [LarNO paper](https://holmescao.github.io/datasets/LarNO) | UK | 8 m / 5 min | 52×120 | 36 | 3 h | Spatial `(T,H,W)` |
