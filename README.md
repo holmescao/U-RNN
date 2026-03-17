@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://www.sciencedirect.com/science/article/pii/S002216942500455X?via%3Dihub"><img src="https://img.shields.io/badge/Journal%20of%20Hydrology-2025-blue" alt="Journal of Hydrology 2025"></a>
-  <a href="https://colab.research.google.com/github/holmescao/U-RNN/blob/main/notebooks/quickstart.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+  <a href="https://colab.research.google.com/drive/14pw_SjC9Xk7jqpJh2rktXzDajbpkPJoW?usp=sharing"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
   <a href="https://github.com/holmescao/U-RNN"><img src="https://img.shields.io/github/stars/holmescao/U-RNN?style=social" alt="GitHub Stars"></a>
   <a href="https://holmescao.github.io/datasets/urbanflood24"><img src="https://img.shields.io/badge/Dataset-UrbanFlood24-orange" alt="Dataset"></a>
   <a href="https://drive.google.com/file/d/1tfwRJ3gFFTa0kiziVeo9xXsz0DaaJrJU/view?usp=drive_link"><img src="https://img.shields.io/badge/Weights-Google%20Drive-yellow" alt="Weights"></a>
@@ -16,8 +16,8 @@
 
 ---
 
-> [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/holmescao/U-RNN/blob/main/notebooks/quickstart.ipynb)
-> &nbsp; **Quickest path** — run the full pipeline in your browser in < 5 min. No GPU, no data download, no local setup.
+> [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/14pw_SjC9Xk7jqpJh2rktXzDajbpkPJoW?usp=sharing)
+> &nbsp; **Quickest path** — run the full pipeline in your browser in < 2 min. No GPU, no data download, no local setup.
 
 > 🚀 **Prefer a cloud GPU for full-resolution training?**
 > Rent a single RTX 4090 on [AutoDL](https://www.autodl.com/) for ~¥2/hour. A complete step-by-step guide using the browser-based JupyterLab is in [Section 11 — Cloud GPU: AutoDL Guide](#11-cloud-gpu--autodl-guide).
@@ -26,7 +26,7 @@
 
 ## News
 
-- **[2026.03]** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/holmescao/U-RNN/blob/main/notebooks/quickstart.ipynb) **Quickstart notebook released** — reproduce flood nowcasting in < 5 minutes, no local GPU or dataset needed.
+- **[2026.03]** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/14pw_SjC9Xk7jqpJh2rktXzDajbpkPJoW?usp=sharing) **Quickstart notebook released** — reproduce flood nowcasting in < 2 minutes, no local GPU or dataset needed.
 - **[2026.03]** **[LarNO](https://github.com/holmescao/LarNO) benchmark datasets supported**: train on [Futian](configs/futian_scratch.yaml) (Shenzhen, 20 m/5 min) and [UKEA](configs/ukea_scratch.yaml) (UK, 8 m/5 min). See [Section 6](#6-scenario-c--larno-datasets-training-futian--ukea).
 - **[2026.03]** Training speedup tips added: use the lightweight dataset (8 m / 10 min) for fast iteration — see [Section 5](#5-scenario-b--lightweight-training-fast-iteration).
 - **[2025.04]** Peking University's official media promoted our work — [Chinese](https://mp.weixin.qq.com/s/hbeWwhh_j46FiBgSIPL_jw) | [English](https://see.pkusz.edu.cn/en/info/1007/1156.htm).
@@ -47,7 +47,7 @@
 
 | | |
 |:---:|:---|
-| [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/holmescao/U-RNN/blob/main/notebooks/quickstart.ipynb) | **No local GPU? Try in your browser.** The [quickstart notebook](notebooks/quickstart.ipynb) runs end-to-end in < 5 min — no installation, no dataset download. Covers architecture demo, real inference, and a training run. |
+| [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/14pw_SjC9Xk7jqpJh2rktXzDajbpkPJoW?usp=sharing) | **No local GPU? Try in your browser.** The [quickstart notebook](notebooks/quickstart.ipynb) runs end-to-end in < 2 min — no installation, no dataset download. Covers architecture demo and real inference. |
 
 </div>
 
@@ -889,6 +889,30 @@ A: Pass `--viz_time_points 0 60 120 180` (space-separated integers, zero-indexed
 **Q: How do I use spatial (heterogeneous) rainfall?**
 
 A: Store `rainfall.npy` as shape `(T, H, W)` instead of `(T,)`. The dataset loader detects the shape automatically — no config change needed. Futian and UKEA configs already use spatial rainfall.
+
+---
+
+**Q: Does the code require exactly torch==2.0.0?**
+
+A: No. PyTorch 2.0.0 is the version tested on the development machine, but the code is compatible with PyTorch 2.1.x and later. If your environment already has a newer PyTorch version, you do not need to downgrade.
+
+---
+
+**Q: I only have a subset of the test events (e.g., 1 event). Can I still run inference?**
+
+A: Yes. Create a custom test list file with just the event names you have:
+
+```bash
+echo 'r100y_p0.5_d3h' > code/src/lib/dataset/demo_test.txt
+```
+
+Then pass it to `test.py`:
+
+```bash
+python test.py --exp_config configs/lite.yaml \
+               --timestamp 20260316_130418_443889 \
+               --test_list_file ./src/lib/dataset/demo_test.txt
+```
 
 ---
 

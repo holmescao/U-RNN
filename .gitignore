@@ -4,3 +4,4 @@ wandb/*
 CLAUDE.md
 data/*
 exp/*
+*.zip
