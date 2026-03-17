@@ -22,7 +22,7 @@
 #   • 4 test events      (event65, event70, event74, event78)
 #   • Spatial rainfall   (T, H, W) — design storms generated from radar patterns
 #
-# Training: ~6–12 h on a single RTX 4090 (200 epochs)
+# Training: ~5 h on a single RTX 4090 (200 epochs)
 # VRAM:     ≥ 16 GB (400×560 with gradient checkpointing)
 #
 # Normalization notes (calibrated from benchmark data):

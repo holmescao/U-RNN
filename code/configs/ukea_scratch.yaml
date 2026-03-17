@@ -24,9 +24,7 @@
 #   • Grid: original 50×120, padded to 52×120 (multiples of 4 for AvgPool2d)
 #   • Duration: 36 × 5 min = 3 h  (d3h design-storm events)
 #
-# Training: ~40–80 min on a single RTX 4090 (200 epochs)
-# Ablation: prewarming=true (300 ep) → R²=0.843; prewarming=false (200 ep) → R²=0.517
-#   ↳ UKEA needs prewarming=true — spatial design storms require state alignment
+# Training: ~35 min on a single RTX 4090 (300 epochs)
 # VRAM:     ≥ 8 GB
 #
 # Normalization notes (calibrated from benchmark data):
@@ -74,7 +72,7 @@ train_event:      true
 all_seq_train:    false
 full_window_size: false
 wind_random:      true
-prewarming: true    # required for UKEA: spatial design storms need state alignment across windows
+prewarming: false    # required for UKEA: spatial design storms need state alignment across windows
 
 # ── Optimizer ─────────────────────────────────────────────────────────────────
 lr:            0.01

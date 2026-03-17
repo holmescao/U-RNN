@@ -98,10 +98,8 @@ class FocalBCE_and_WMSE(nn.Module):
             inputs["reg"], targets)
 
         # Curriculum weighting: learn extent before depth
-        if epoch < 500:
-            loss = loss_reg + 10 * loss_cls   # classification-heavy phase
-        else:
-            loss = loss_reg + 0.1 * loss_cls  # regression-heavy phase
+        
+        loss = loss_reg + 0.1 * loss_cls  # regression-heavy phase
 
         return {
             "loss": loss,

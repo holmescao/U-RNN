@@ -178,7 +178,7 @@ def split_iter_index(start_loc, seq_num, window_size):
     return iter_indexes
 
 
-def WarmUpCosineAnneal(optimizer, warm_up_iter, T_max, lr_max, lr_min):
+def WarmUpCosineAnneal_v2(optimizer, warm_up_iter, T_max, lr_max, lr_min):
     """
     Create a scheduler with a warm-up phase followed by cosine annealing of the learning rate.
 
@@ -199,7 +199,7 @@ def WarmUpCosineAnneal(optimizer, warm_up_iter, T_max, lr_max, lr_min):
             return lr_min + 0.5 * (lr_max - lr_min) * (1 + math.cos((cur_iter - warm_up_iter) / (T_max - warm_up_iter) * math.pi)) / 0.1
     return lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda0)
 
-def WarmUpCosineAnneal_v2(optimizer, warm_up_iter, T_max, lr_max, lr_min):
+def WarmUpCosineAnneal(optimizer, warm_up_iter, T_max, lr_max, lr_min):
     """
     Create a scheduler with a warm-up phase followed by cosine annealing of the learning rate.
 
@@ -325,8 +325,7 @@ def load_model(args, device, local_rank, rank):
               f"Skipped {len(skipped)}: {skipped}")
         cur_epoch = 0
         if rank in {-1, 0}:
-            if not os.path.isdir(args.save_model_dir):
-                os.makedirs(args.save_model_dir)
+            os.makedirs(args.save_model_dir, exist_ok=True)
             checkpoint_path = os.path.join(args.save_model_dir, "checkpoint_0_99999.pth.tar")
             torch.save({"state_dict": net.state_dict()}, checkpoint_path)
             print("saved model!")
@@ -367,8 +366,7 @@ def load_model(args, device, local_rank, rank):
         )
 
         if rank in {-1, 0}:
-            if not os.path.isdir(args.save_model_dir):
-                os.makedirs(args.save_model_dir)
+            os.makedirs(args.save_model_dir, exist_ok=True)
             torch.save({"state_dict": net.state_dict()}, checkpoint_path)
             print("saved model!")
         if rank != -1:

@@ -208,7 +208,7 @@ U-RNN/
 
 ### Dataset 2 — UrbanFlood24 Lite (lightweight, recommended for fast iteration)
 
-This is a **downsampled version** of UrbanFlood24 (spatial factor 4×, temporal factor 10×): 500×500→128×128, 360→36 steps. It is ~50× smaller and trains in **~30 min** on a single RTX 4090 while achieving **R²=0.989**.
+This is a **downsampled version** of UrbanFlood24 (spatial factor 4×, temporal factor 10×): 500×500→128×128, 360→36 steps. It is ~50× smaller and trains in **~30–45 min** on a single RTX 4090, typically achieving **R²≈0.91–0.99** (provided weights: 0.989; exact value varies with GPU/seed).
 
 **Download** (contains only the 12 training/test events for location1–3):
 
@@ -398,7 +398,7 @@ For ~2–3× faster inference, see [Section 8 — Inference with TensorRT](#8-in
 
 ## 5. Scenario B — Lightweight Training (Fast Iteration)
 
-> **Requirements:** UrbanFlood24 Lite dataset (Section 2) &nbsp;|&nbsp; ≥ 8 GB VRAM &nbsp;|&nbsp; ~30 min on RTX 4090 (200 epochs)
+> **Requirements:** UrbanFlood24 Lite dataset (Section 2) &nbsp;|&nbsp; ≥ 8 GB VRAM &nbsp;|&nbsp; ~30–45 min on RTX 4090 (200 epochs)
 
 This scenario trains on the **128×128 × 36 steps** lightweight dataset (~50× smaller than full resolution). It is the recommended starting point for verifying your setup before committing to full training.
 
@@ -443,11 +443,11 @@ python test.py --exp_config configs/lite.yaml \
 
 ## 6. Scenario C — LarNO Datasets Training (Futian & UKEA)
 
-> **Requirements:** LarNO dataset (Section 2) &nbsp;|&nbsp; ≥ 8–16 GB VRAM &nbsp;|&nbsp; 40 min – 12 h on RTX 4090
+> **Requirements:** LarNO dataset (Section 2) &nbsp;|&nbsp; ≥ 8–16 GB VRAM &nbsp;|&nbsp; 35 min – 5 h on RTX 4090
 
 ### Futian (Shenzhen, China)
 
-> ~6–12 h on RTX 4090 (200 epochs, 400×560 grid)
+> ~5 h on RTX 4090 (200 epochs, 400×560 grid)
 
 ```bash
 cd code   # the inner code directory
@@ -463,7 +463,7 @@ python main.py --exp_config configs/futian_scratch.yaml
 
 ### UKEA (UK)
 
-> ~40–80 min on RTX 4090 (300 epochs, 52×120 grid)
+> ~35 min on RTX 4090 (300 epochs, 52×120 grid)
 
 ```bash
 # First convert the LarNO dataset (one-time):
@@ -750,14 +750,14 @@ Results appear in `exp/20240202_162801_962166/figs/`.
 
 ### 🏋️ Step 8 — Training
 
-**Scenario B — UrbanFlood24 lightweight dataset (128×128×36, ~30 min on one 4090):**
+**Scenario B — UrbanFlood24 lightweight dataset (128×128×36, ~30–45 min on one 4090):**
 
 ```bash
 cd /root/autodl-tmp/U-RNN/code
 python main.py --exp_config configs/lite.yaml
 ```
 
-**Scenario C — Futian (Shenzhen, 400×560×72, ~6–12 h on one 4090):**
+**Scenario C — Futian (Shenzhen, 400×560×72, ~5 h on one 4090):**
 
 ```bash
 cd /root/autodl-tmp/U-RNN/code
@@ -771,7 +771,7 @@ python tools/convert_larfno_data.py --dataset futian \
 python main.py --exp_config configs/futian_scratch.yaml
 ```
 
-**Scenario C — UKEA (UK, 52×120×36, ~40–80 min on one 4090):**
+**Scenario C — UKEA (UK, 52×120×36, ~35 min on one 4090):**
 
 ```bash
 cd /root/autodl-tmp/U-RNN/code
@@ -817,7 +817,7 @@ This project is released under the [MIT License](LICENSE).
 
 A: Follow this order:
 1. **Scenario A** — run inference with the pre-trained weights to verify your setup (requires full dataset, ~5 min).
-2. **Scenario B** — train on the lightweight dataset (~30 min) to confirm the training pipeline works end-to-end.
+2. **Scenario B** — train on the lightweight dataset (~30–45 min) to confirm the training pipeline works end-to-end.
 3. **Scenario C** — train on LarNO datasets (Futian or UKEA) with pre-converted data.
 4. **Scenario D** — full training to reproduce paper accuracy (~40 hours).
 
@@ -827,7 +827,7 @@ A: Follow this order:
 
 A: Three main levers:
 1. **Reduce spatiotemporal resolution** — use `tools/downsample_dataset.py` to create a downsampled dataset. A 4× spatial + 10× temporal reduction gives ~50× speedup (Scenario B).
-2. **Reduce epochs** — the paper uses 1000 epochs, but **200 epochs with `prewarming=false` achieves R²=0.989**, which is our recommended default.
+2. **Reduce epochs** — the paper uses 1000 epochs, but **200 epochs with `prewarming=false` typically achieves R²≈0.91–0.99** (provided weights reach 0.989), which is our recommended default.
 3. **Enable gradient checkpointing** — add `--use_checkpoint` to reduce GPU memory and allow larger `--seq_num`.
 
 ---

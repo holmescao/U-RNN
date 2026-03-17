@@ -14,7 +14,8 @@
 #
 # Dataset:  UrbanFlood24 Lite location1 — 128×128 grid, 8 m / 10-min steps, T=36
 #           Download from Section 2 of the README (no generation step needed).
-# Training: ~30 min on a single RTX 4090 (200 epochs, prewarming=false) → R²=0.989
+# Training: ~30–45 min on a single RTX 4090 (200 epochs, prewarming=false) → R²≈0.91–0.99
+#           (exact value varies with GPU/seed; provided weights achieve R²=0.989)
 # VRAM:     ≥ 8 GB
 # ─────────────────────────────────────────────────────────────────────────────
 
