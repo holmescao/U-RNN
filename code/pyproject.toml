@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "urnn"
+version = "1.1.0"
+description = "U-RNN: High-resolution spatiotemporal nowcasting of urban flooding"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.8"
+authors = [
+    { name = "Xiaoyan Cao", email = "holmescao@outlook.com" },
+]
+keywords = ["urban flooding", "nowcasting", "deep learning", "spatiotemporal", "ConvGRU"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Scientific/Engineering :: Hydrology",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "numpy>=1.21",
+    "pyyaml>=6.0",
+    "tqdm>=4.64",
+    "openpyxl>=3.0.10",
+    "seaborn>=0.12",
+    "celluloid>=0.2.0",
+    "opencv-python-headless>=4.6",
+    "scipy>=1.9",
+]
+
+[project.urls]
+Homepage = "https://github.com/holmescao/U-RNN"
+Paper    = "https://doi.org/10.1016/j.jhydrol.2025.133117"
+Dataset  = "https://holmescao.github.io/datasets/urbanflood24"
+
+[project.scripts]
+urnn-train = "main:main"
+urnn-test  = "test:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.setuptools.package-data]
+"src.lib.dataset" = ["*.txt"]
+"configs" = ["*.yaml", "defaults/*.yaml"]

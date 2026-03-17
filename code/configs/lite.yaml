@@ -1,0 +1,87 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# configs/lite.yaml  —  Lightweight training & inference (recommended start)
+#
+# Usage
+#   Single-GPU:
+#     python main.py  --exp_config configs/lite.yaml
+#     python test.py  --exp_config configs/lite.yaml --timestamp <ts>
+#
+#   Multi-GPU (DDP, Linux only — NCCL backend):
+#     CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 main.py \
+#         --exp_config configs/lite.yaml
+#     # Effective batch size = batch_size × world_size (2 here).
+#     # After training, run inference with the same single-GPU command above.
+#
+# Dataset:  UrbanFlood24 Lite location1 — 128×128 grid, 8 m / 10-min steps, T=36
+#           Download from Section 2 of the README (no generation step needed).
+# Training: ~30 min on a single RTX 4090 (200 epochs, prewarming=false) → R²=0.989
+# VRAM:     ≥ 8 GB
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Dataset ───────────────────────────────────────────────────────────────────
+data_root: ../data/urbanflood24_lite  # path relative to the code/ directory
+
+# Restrict to location1 (the primary benchmark in the paper).
+# Remove or leave empty to train on all available locations in the lite dataset.
+location:  location1
+train_list_file: ./src/lib/dataset/location1_train.txt
+test_list_file:  ./src/lib/dataset/location1_test.txt
+
+input_height: 128                     # 500 / spatial_factor 4 ≈ 128 (output of downsample_dataset.py)
+input_width:  128
+
+# Rainfall history length.
+# Input channels = historical_nums * 2 + 3  →  3*2+3 = 9 channels
+historical_nums: 3                    # look-back: 3 × 10-min steps = 30 min
+
+# Min-Max normalisation constants — same physical range; adjusted for 10-min aggregation.
+flood_max:       5000    # mm
+rain_max:          60.0  # mm/10 min  (= 6 mm/min × 10 min)
+cumsum_rain_max:  250.0  # mm
+flood_thres:      150.0  # mm
+
+# Timestep indices for inference snapshots.
+# Four snapshots across a 36-step (6-hour at 10-min resolution) event.
+viz_time_points: [0, 11, 23, 35]
+
+# ── Training schedule ─────────────────────────────────────────────────────────
+epochs:      200
+batch_size:  1
+random_seed: 42
+num_workers: 4     # set to 0 on Windows if you get DataLoader errors
+
+# ── Sliding Window Pre-warming (SWP) ──────────────────────────────────────────
+# seq_num=9: 4 gradient updates per 36-step event.
+seq_num:          9
+window_size:      36
+duration:         36
+train_event:      true
+all_seq_train:    false
+full_window_size: false
+wind_random:      true
+
+# Fast mode: reuse the previous window's final hidden states instead of
+# re-warming from t=0 each time.  Marginally lower accuracy than prewarming=true
+# but significantly faster — recommended for lightweight / exploratory training.
+# Set to true to use the original paper SWP paradigm.
+prewarming: false
+
+# ── Optimizer ─────────────────────────────────────────────────────────────────
+lr:            0.01
+lr_min:        0.0001
+schedule_name: WarmUpCosineAnneal
+warm_up_iter:  10
+patience:      10
+factor:        0.9
+
+# ── Loss ──────────────────────────────────────────────────────────────────────
+loss_name: FocalBCE_and_WMSE
+reduction: mean
+cls_thred: 0.5
+
+# ── Model ─────────────────────────────────────────────────────────────────────
+use_checkpoint: true
+
+# ── Runtime ───────────────────────────────────────────────────────────────────
+resume: false
+test:   true

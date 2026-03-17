@@ -1,0 +1,82 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# configs/location3_scratch.yaml  —  UrbanFlood24 location3 full-resolution training
+#
+# Usage
+#   Single-GPU:
+#     python main.py  --exp_config configs/location3_scratch.yaml
+#     python test.py  --exp_config configs/location3_scratch.yaml --timestamp <ts>
+#
+#   Multi-GPU (DDP, Linux only — NCCL backend):
+#     CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 main.py \
+#         --exp_config configs/location3_scratch.yaml
+#     # Effective batch size = batch_size × world_size (2 here).
+#     # After training, run inference with the same single-GPU command above.
+#
+# Dataset:  UrbanFlood24 location3 — 500×500 grid, 2 m, T=360, 1-min steps
+#   • 8 training events  (design rainfall, r-prefix)
+#   • 4 test events      (design rainfall, r-prefix)
+#   • Scalar rainfall    (T,) — spatially uniform design storms
+#
+# Training: ~6–12 h on a single RTX 4090 (1000 epochs)
+# VRAM:     ≥ 16 GB  (use_checkpoint: true for gradient checkpointing)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Dataset ───────────────────────────────────────────────────────────────────
+data_root: ../data/urbanflood24
+
+location:  location3
+train_list_file: ./src/lib/dataset/location3_train.txt
+test_list_file:  ./src/lib/dataset/location3_test.txt
+
+input_height: 500
+input_width:  500
+
+# Rainfall history: 30 × 1-min steps = 30-min lookback
+# Input channels = 30*2+3 = 63
+historical_nums: 30
+
+# Normalization constants — calibrated for UrbanFlood24 design storms
+flood_max:       5000
+rain_max:          6.0
+cumsum_rain_max:  250.0
+flood_thres:      150.0
+
+# Timestep indices for spatial snapshots during inference (T=360, 1-min intervals)
+viz_time_points: [0, 119, 239, 359]
+
+# ── Training schedule ─────────────────────────────────────────────────────────
+epochs:      1000
+batch_size:  1
+random_seed: 42
+num_workers: 4
+
+# ── Sliding Window Pre-warming (SWP) ──────────────────────────────────────────
+# T=360 steps; each epoch trains on a random 36-step window (seq_num=12: 3 backward passes).
+seq_num:          12
+window_size:      36
+duration:         360
+train_event:      true
+all_seq_train:    false
+full_window_size: false
+wind_random:      true
+prewarming: false
+
+# ── Optimizer ─────────────────────────────────────────────────────────────────
+lr:            0.01
+lr_min:        0.0001
+schedule_name: WarmUpCosineAnneal
+warm_up_iter:  10
+patience:      10
+factor:        0.9
+
+# ── Loss ──────────────────────────────────────────────────────────────────────
+loss_name: FocalBCE_and_WMSE
+reduction: mean
+cls_thred: 0.5
+
+# ── Model ─────────────────────────────────────────────────────────────────────
+use_checkpoint: true   # required for 500×500 grid to fit in GPU memory
+
+# ── Runtime ───────────────────────────────────────────────────────────────────
+resume: false
+test:   true

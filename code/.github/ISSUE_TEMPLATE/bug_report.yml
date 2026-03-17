@@ -1,0 +1,76 @@
+name: Bug Report
+description: Report a reproducible bug or unexpected behavior
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug. Please fill in as much detail as possible.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: I have searched existing issues and this is not a duplicate
+          required: true
+        - label: I have read the [FAQ](../blob/main/README.md#13-faq)
+          required: true
+
+  - type: dropdown
+    id: scenario
+    attributes:
+      label: Which scenario are you using?
+      options:
+        - "Scenario A — Inference with pre-trained weights"
+        - "Scenario B — Lightweight training"
+        - "Scenario C — Full training"
+        - "TensorRT inference"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: A clear and concise description of what the bug is.
+      placeholder: "When I run ... I get ... instead of ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Exact commands and config used.
+      placeholder: |
+        1. Config: `configs/lite.yaml`
+        2. Command: `python main.py --exp_config configs/lite.yaml`
+        3. Error message:
+        ```
+        paste error here
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Run `python -c "import torch; print(torch.__version__, torch.cuda.is_available())"` and paste the output.
+      placeholder: |
+        - OS: Ubuntu 20.04 / Windows 11
+        - GPU: RTX 4090 / A100
+        - CUDA: 11.8
+        - PyTorch: 2.0.0+cu118
+        - Python: 3.8.18
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Paste the full error traceback here.
+      render: shell

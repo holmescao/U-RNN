@@ -1,0 +1,93 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# configs/futian_scratch.yaml  —  Futian District (LarNO region1_20m) training
+#
+# Usage
+#   Convert data first (download from https://holmescao.github.io/datasets/LarNO):
+#     python tools/convert_larfno_data.py --dataset futian \
+#         --larfno_root /path/to/larno/futian \
+#         --dst_root ../data/larfno_futian
+#
+#   Single-GPU:
+#     python main.py  --exp_config configs/futian_scratch.yaml
+#     python test.py  --exp_config configs/futian_scratch.yaml --timestamp <ts>
+#
+#   Multi-GPU (DDP, Linux only — NCCL backend):
+#     CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 main.py \
+#         --exp_config configs/futian_scratch.yaml
+#     # Effective batch size = batch_size × world_size (2 here).
+#     # After training, run inference with the same single-GPU command above.
+#
+# Dataset:  LarNO Futian (region1_20m) — 400×560 grid, 20 m, 5-min, T=72
+#   • 8 training events  (event1, event11, …, event63)
+#   • 4 test events      (event65, event70, event74, event78)
+#   • Spatial rainfall   (T, H, W) — design storms generated from radar patterns
+#
+# Training: ~6–12 h on a single RTX 4090 (200 epochs)
+# VRAM:     ≥ 16 GB (400×560 with gradient checkpointing)
+#
+# Normalization notes (calibrated from benchmark data):
+#   rain_max       = 5.0  mm/5min   (observed max across all events: ~4.0 mm/5min)
+#   cumsum_rain_max = 100.0 mm      (observed max: ~62 mm)
+#   flood_max      = 5000  mm       (generous upper bound; max observed: ~2700 mm)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Dataset ───────────────────────────────────────────────────────────────────
+data_root: ../data/larfno_futian   # path relative to the code/ directory
+
+# Custom event lists (relative to the code/ directory)
+train_list_file: ./src/lib/dataset/futian_train.txt
+test_list_file:  ./src/lib/dataset/futian_test.txt
+
+input_height: 400   # Futian grid height
+input_width:  560   # Futian grid width
+
+# Rainfall history: 6 × 5-min steps = 30-min lookback
+# Input channels = 6*2+3 = 15
+historical_nums: 6
+
+# Normalization constants — calibrated for LarFNO Futian design storms
+flood_max:       5000    # mm — upper bound for flood depth normalisation
+rain_max:           5.0  # mm/5min — max instantaneous 5-min rainfall
+cumsum_rain_max:  100.0  # mm — max cumulative rainfall over 6-hour event
+flood_thres:      150.0  # mm — wet/dry classification threshold (0.15 m)
+
+# Timestep indices for spatial snapshots during inference (T=72, 5-min intervals)
+# → t=0 (0 min), t=17 (1.5 h), t=35 (3 h), t=71 (6 h)
+viz_time_points: [0, 17, 35, 71]
+
+# ── Training schedule ─────────────────────────────────────────────────────────
+epochs:      200
+batch_size:  1
+random_seed: 42
+num_workers: 4    # set to 0 on Windows if you get DataLoader errors
+
+# ── Sliding Window Pre-warming (SWP) ──────────────────────────────────────────
+# T=72 steps. seq_num=24: 3 gradient windows per event.
+seq_num:          24
+window_size:      72
+duration:         72
+train_event:      true
+all_seq_train:    false
+full_window_size: false
+wind_random:      true
+prewarming: false   # faster; set to true for paper-accurate SWP
+
+# ── Optimizer ─────────────────────────────────────────────────────────────────
+lr:            0.01
+lr_min:        0.0001
+schedule_name: WarmUpCosineAnneal
+warm_up_iter:  5
+patience:      10
+factor:        0.9
+
+# ── Loss ──────────────────────────────────────────────────────────────────────
+loss_name: FocalBCE_and_WMSE
+reduction: mean
+cls_thred: 0.5
+
+# ── Model ─────────────────────────────────────────────────────────────────────
+use_checkpoint: true   # recommended for 400×560 input
+
+# ── Runtime ───────────────────────────────────────────────────────────────────
+resume: false
+test:   true

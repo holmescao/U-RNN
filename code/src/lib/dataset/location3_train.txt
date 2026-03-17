@@ -1,0 +1,8 @@
+r500y_p0.4_d3h
+r300y_p0.9_d3h
+r100y_p0.6_d3h
+r100y_p0.7_d3h
+r500y_p0.6_d3h
+r300y_p0.4_d3h
+r200y_p0.3_d3h
+r500y_p0.9_d3h

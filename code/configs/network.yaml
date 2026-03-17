@@ -1,0 +1,55 @@
+# U-RNN Network Architecture Configuration
+#
+# This file defines ALL architecture-level shape parameters.
+# Runtime parameters (input_height, input_width, batch_size, epochs, lr, etc.)
+# live in config.py (argparse), not here.
+#
+# To switch to a different architecture, copy this file and pass the new path
+# via --net_config <path> at training/inference time.
+
+model:
+  # ── Encoder ────────────────────────────────────────────────────────────────
+  encoder:
+    # Output channels of the projection conv layer at each stage.
+    # Stage 0: raw input → conv_out_channels[0] features before GRU.
+    # Stage k: GRU output of stage k-1 → conv_out_channels[k].
+    conv_out_channels: [16, 64, 96]
+
+    # Hidden-state (num_features) of the ConvGRU cell at each stage.
+    # This is the channel count of the hidden state tensor passed between timesteps.
+    gru_channels: [64, 96, 96]
+
+    # Spatial downsampling factor applied AFTER the conv layer at each stage.
+    # 1 = no downsampling; 2 = AvgPool(kernel=2, stride=2).
+    downsample_factors: [1, 2, 2]
+
+    # Conv filter (kernel) size for all encoder conv layers.
+    filter_size: 1
+
+  # ── Decoder ────────────────────────────────────────────────────────────────
+  decoder:
+    # Hidden-state channels of the ConvGRU cell at each decoder stage.
+    # Stage order: deepest first (mirrors encoder in reverse).
+    gru_channels: [96, 96, 64]
+
+    # Output channels of the deconv / conv layer at each decoder stage.
+    # stage0 (deepest) deconv: 96ch  → feeds rnn2 as x input
+    # stage1 deconv:           96ch  → feeds rnn1 as x input
+    # stage2 (shallowest) conv: 16ch → final feature map fed to head
+    conv_out_channels: [96, 96, 16]
+
+    # Spatial upsampling factor applied by the deconv at each stage.
+    # 2 = ConvTranspose2d stride=2; 1 = plain conv (no upsampling).
+    upsample_factors: [2, 2, 1]
+
+    # Conv/deconv filter size for decoder layers (deconv uses filter_size+1).
+    filter_size: 1
+
+  # ── Detection Head (YOLOXHead) ─────────────────────────────────────────────
+  head:
+    # Input channel count to YOLOXHead.
+    # Must equal the last decoder GRU channel: decoder.gru_channels[-1].
+    in_channels: 64
+
+    # Channel width multiplier.  Effective channels = in_channels * width.
+    width: 0.25
