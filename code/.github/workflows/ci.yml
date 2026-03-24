@@ -1,0 +1,59 @@
+name: CI — Import & Config Check
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-imports:
+    name: Verify imports and config parsing
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install CPU-only PyTorch (CI)
+        run: |
+          pip install torch==2.0.0 torchvision==0.15.1 --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install core dependencies
+        working-directory: U-RNN
+        run: |
+          pip install -r requirements.txt
+
+      - name: Check module imports
+        working-directory: U-RNN
+        run: |
+          python -c "
+          import sys
+          sys.path.insert(0, '.')
+          from src.lib.model.networks.net_params import get_network_params
+          p = get_network_params(False, 32, 32)
+          print('net_params OK')
+
+          from src.lib.dataset.Dynamic2DFlood import Dynamic2DFlood, preprocess_inputs
+          print('dataset OK')
+
+          import config
+          print('config OK')
+          "
+
+      - name: Check config.py --help
+        working-directory: U-RNN
+        run: python config.py --help
+
+      - name: Check tools --help
+        working-directory: U-RNN
+        run: |
+          python tools/downsample_dataset.py --help
+          python tools/compare_metrics.py --help

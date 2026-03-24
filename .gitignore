@@ -1,0 +1,8 @@
+wandb/*
+.vscode/*
+.claude/
+CLAUDE.md
+data/*
+exp/*
+*.zip
+TODO.md

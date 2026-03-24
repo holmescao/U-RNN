@@ -1,0 +1,55 @@
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  configs/defaults/training.yaml  —  INTERNAL DEVELOPER DEFAULTS         ║
+# ║                                                                          ║
+# ║  ⚠  DO NOT EDIT for normal use.                                          ║
+# ║     Use configs/full.yaml or configs/lite.yaml instead.                  ║
+# ║                                                                          ║
+# ║  This file is loaded ONLY when no --exp_config is given (developer CLI   ║
+# ║  mode).  When --exp_config is used, this file is ignored entirely.       ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+
+# ── Epochs & data loading ────────────────────────────────────────────────────
+epochs: 1000
+batch_size: 1
+random_seed: 42
+num_workers: 20
+
+# ── Sliding Window Pre-warming (SWP) paradigm ───────────────────────────────
+# SWP splits each training sample into overlapping windows processed sequentially.
+# Lower seq_num = less GPU memory per backward pass.
+seq_num: 28          # Time steps per backward pass (one gradient update).
+window_size: 360     # Length of the sequence window sampled from each event.
+duration: 360        # Padding/truncation length in data loading (usually = window_size).
+train_event: true    # Use the full event sequence (including dry tail) as the sample.
+all_seq_train: false # If true, use the entire event length as window_size.
+full_window_size: false  # If true, set seq_num = window_size (one large window).
+wind_random: true    # Shuffle the order of SWP windows within each sample.
+
+# ── Pre-warming ───────────────────────────────────────────────────────────────
+# prewarming=true:  original SWP paper paradigm — gradient-free warm-up from t=0
+#                   before each training window.  Maximally accurate but slow
+#                   (adds O(window_start) no-grad steps per window).
+# prewarming=false: fast mode (default) — reuse the previous window's final hidden
+#                   states instead of re-warming from t=0.  Only one gradient
+#                   update separates consecutive windows, so state drift is small
+#                   and accuracy is marginally lower but typically acceptable.
+#                   Recommended for day-to-day training; use true only when
+#                   reproducing the exact paper numbers.
+prewarming: false
+
+# ── Optimizer ────────────────────────────────────────────────────────────────
+lr: 0.01             # Initial / peak learning rate.
+lr_min: 0.0001       # Minimum learning rate floor (WarmUpCosineAnneal).
+schedule_name: WarmUpCosineAnneal  # WarmUpCosineAnneal | ReduceLROnPlateau
+warm_up_iter: 10     # Number of warm-up epochs (linear ramp from 0 to lr).
+patience: 10         # Patience epochs before LR reduction (ReduceLROnPlateau only).
+factor: 0.9          # LR reduction factor: new_lr = lr * factor (ReduceLROnPlateau only).
+
+# ── Loss function ────────────────────────────────────────────────────────────
+loss_name: FocalBCE_and_WMSE  # Combines focal BCE (extent) + weighted MSE (depth).
+reduction: mean               # Loss reduction: mean | sum
+
+# ── Runtime behaviour ────────────────────────────────────────────────────────
+resume: false        # Resume training from the last checkpoint if one exists.
+test: true           # Run inference/test after training completes.
+cls_thred: 0.5       # Classification probability threshold for suppressing dry-cell depth.

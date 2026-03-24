@@ -1,0 +1,35 @@
+name: Feature Request / Question
+description: Suggest an enhancement or ask a usage question
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for feature requests, dataset questions, or general usage inquiries.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Request type
+      options:
+        - "Feature request"
+        - "Usage question"
+        - "New dataset / new location support"
+        - "Performance / accuracy question"
+        - "Documentation improvement"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What would you like to see or know?
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation / use case
+      description: Why is this useful? What problem does it solve?

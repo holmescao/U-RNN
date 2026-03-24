@@ -1,0 +1,41 @@
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  configs/defaults/data.yaml  —  INTERNAL DEVELOPER DEFAULTS             ║
+# ║                                                                          ║
+# ║  ⚠  DO NOT EDIT for normal use.                                          ║
+# ║     Use configs/full.yaml or configs/lite.yaml instead.                  ║
+# ║                                                                          ║
+# ║  This file is loaded ONLY when no --exp_config is given (developer CLI   ║
+# ║  mode).  When --exp_config is used, this file is ignored entirely.       ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+
+# ── Dataset path ─────────────────────────────────────────────────────────────
+data_root: ./data/urbanflood24
+
+# ── Spatial resolution ───────────────────────────────────────────────────────
+# Must match the pixel dimensions of your dataset grids.
+# Default: 500×500 (2 m/pixel urban DEM at ~1 km² domain).
+# Lightweight dataset (8 m/pixel, 128×128): set both to 128.
+input_height: 500
+input_width: 500
+
+# ── Temporal configuration ───────────────────────────────────────────────────
+# historical_nums: number of past rainfall timesteps used as input features.
+# Total input channels = historical_nums * 2 + 3
+#   (historical_nums rainfall fields + historical_nums cumulative fields + DEM + impervious + manhole)
+# Default (1-min data, 30-min lookback): 30 * 2 + 3 = 63 channels.
+# Lightweight (10-min data, 30-min lookback → 3 steps): 3 * 2 + 3 = 9 channels.
+historical_nums: 30
+
+# ── Normalization constants ──────────────────────────────────────────────────
+# Calibrated for 500-year return-period events in the reference study area.
+# Adjust these if your dataset covers a different climate or scale.
+flood_max: 5000        # Maximum flood depth (mm) for Min-Max normalization.
+rain_max: 6.0          # Maximum instantaneous rainfall intensity (mm/min).
+cumsum_rain_max: 250.0 # Maximum cumulative rainfall (mm) over the event.
+flood_thres: 150.0     # Flood / dry-cell classification threshold (mm).
+
+# ── Visualization ────────────────────────────────────────────────────────────
+# Indices of timesteps at which spatial flood maps are saved during testing.
+# Default matches the 360-step (1-min resolution, 6-hour) reference event.
+# For the 36-step lightweight dataset (10-min resolution), use: [0, 11, 23, 35]
+viz_time_points: [0, 119, 239, 359]

@@ -1,0 +1,23 @@
+# U-RNN core dependencies
+# Install with:
+#   pip install -r requirements.txt
+#
+# PyTorch must be installed first — see https://pytorch.org/get-started/locally/
+# Tested with: torch==2.0.0+cu118
+#
+# For TensorRT inference (optional), also install:
+#   pip install -r requirements_tensorrt.txt
+
+matplotlib
+pandas
+numpy
+seaborn
+tqdm
+tensorboardX
+scikit-learn
+ipython
+celluloid
+opencv-python==4.6.0.66
+openpyxl>=3.0.10
+pyyaml
+wandb

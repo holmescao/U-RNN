@@ -1,0 +1,14 @@
+# U-RNN TensorRT inference dependencies (optional)
+# Only needed for Scenario: Inference with TensorRT (Section 8 in README)
+# Requires TensorRT 10.0.0.6 — see https://developer.nvidia.com/tensorrt
+#
+# Install AFTER the core requirements:
+#   pip install -r requirements.txt
+#   pip install -r requirements_tensorrt.txt
+
+cuda-python==12.3.0
+pycuda==2024.1
+
+# NVIDIA Apex (optional, for mixed-precision training)
+# Install separately: https://github.com/NVIDIA/apex
+# apex
