@@ -26,6 +26,7 @@
 
 ## News
 
+- **[2026.05]** 🎉 Our follow-up work **[LarNO](https://github.com/holmescao/LarNO)** accepted by *Journal of Hydrology* ([DOI: 10.1016/j.jhydrol.2026.135686](https://doi.org/10.1016/j.jhydrol.2026.135686)) — large-scale urban flood modeling with zero-shot high-resolution generalization. [Code](https://github.com/holmescao/LarNO) and [dataset](https://holmescao.github.io/datasets/LarNO) are open-sourced.
 - **[2026.03]** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/14pw_SjC9Xk7jqpJh2rktXzDajbpkPJoW?usp=sharing) **Quickstart notebook released** — reproduce flood nowcasting in < 2 minutes, no local GPU or dataset needed.
 - **[2026.03]** **[LarNO](https://github.com/holmescao/LarNO) benchmark datasets supported**: train on [Futian](configs/futian_scratch.yaml) (Shenzhen, 20 m/5 min) and [UKEA](configs/ukea_scratch.yaml) (UK, 8 m/5 min). See [Section 6](#6-scenario-c--larno-datasets-training-futian--ukea).
 - **[2026.03]** Training speedup tips added: use the lightweight dataset (8 m / 10 min) for fast iteration — see [Section 5](#5-scenario-b--lightweight-training-fast-iteration).
@@ -944,6 +945,20 @@ If you find this project useful, please cite our paper and dataset:
   year      = {2024},
   publisher = {figshare},
   note      = {Dataset}
+}
+```
+
+If you also use the **[LarNO](https://github.com/holmescao/LarNO)** datasets (Futian, UKEA) or its zero-shot generalization framework, please additionally cite:
+
+```bibtex
+@article{cao2026large,
+  title={Large-scale urban flood modeling and zero-shot high-resolution generalization with LarNO},
+  author={Cao, Xiaoyan and Yao, Yao and Wang, Zhi and Zhao, Zhangxinyue
+          and Borthwick, Alistair GL and Qin, Huapeng},
+  journal={Journal of Hydrology},
+  pages={135686},
+  year={2026},
+  publisher={Elsevier}
 }
 ```
 
